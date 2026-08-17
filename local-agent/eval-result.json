@@ -1,0 +1,637 @@
+{
+  "evaluatedAt": "2026-07-19T11:29:28.612Z",
+  "totalBatches": 40,
+  "validBatches": 40,
+  "engine": {
+    "glm": 0,
+    "rule": 40,
+    "glmKeyConfigured": false
+  },
+  "binary": {
+    "tp": 20,
+    "fp": 0,
+    "fn": 0,
+    "tn": 20,
+    "accuracy": 1,
+    "precision": 1,
+    "recall": 1,
+    "f1": 1,
+    "matrix": {
+      "合格": {
+        "合格": 20,
+        "异常": 0
+      },
+      "异常": {
+        "合格": 0,
+        "异常": 20
+      }
+    }
+  },
+  "rootCause": {
+    "macroF1": 0.6181818181818182,
+    "perClass": [
+      {
+        "category": "lump_tight",
+        "support": 3,
+        "precision": 0.42857142857142855,
+        "recall": 1,
+        "f1": 0.6
+      },
+      {
+        "category": "segregation_loose",
+        "support": 3,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1
+      },
+      {
+        "category": "mix_deviation",
+        "support": 4,
+        "precision": 0,
+        "recall": 0,
+        "f1": 0
+      },
+      {
+        "category": "material_abnormal",
+        "support": 3,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1
+      },
+      {
+        "category": "current_abnormal",
+        "support": 3,
+        "precision": 0,
+        "recall": 0,
+        "f1": 0
+      },
+      {
+        "category": "drywet_abnormal",
+        "support": 4,
+        "precision": 0.5714285714285714,
+        "recall": 1,
+        "f1": 0.7272727272727273
+      },
+      {
+        "category": "none",
+        "support": 20,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1
+      }
+    ],
+    "matrix": {
+      "lump_tight": {
+        "lump_tight": 3,
+        "segregation_loose": 0,
+        "mix_deviation": 0,
+        "material_abnormal": 0,
+        "current_abnormal": 0,
+        "drywet_abnormal": 0,
+        "none": 0
+      },
+      "segregation_loose": {
+        "lump_tight": 0,
+        "segregation_loose": 3,
+        "mix_deviation": 0,
+        "material_abnormal": 0,
+        "current_abnormal": 0,
+        "drywet_abnormal": 0,
+        "none": 0
+      },
+      "mix_deviation": {
+        "lump_tight": 1,
+        "segregation_loose": 0,
+        "mix_deviation": 0,
+        "material_abnormal": 0,
+        "current_abnormal": 0,
+        "drywet_abnormal": 3,
+        "none": 0
+      },
+      "material_abnormal": {
+        "lump_tight": 0,
+        "segregation_loose": 0,
+        "mix_deviation": 0,
+        "material_abnormal": 3,
+        "current_abnormal": 0,
+        "drywet_abnormal": 0,
+        "none": 0
+      },
+      "current_abnormal": {
+        "lump_tight": 3,
+        "segregation_loose": 0,
+        "mix_deviation": 0,
+        "material_abnormal": 0,
+        "current_abnormal": 0,
+        "drywet_abnormal": 0,
+        "none": 0
+      },
+      "drywet_abnormal": {
+        "lump_tight": 0,
+        "segregation_loose": 0,
+        "mix_deviation": 0,
+        "material_abnormal": 0,
+        "current_abnormal": 0,
+        "drywet_abnormal": 4,
+        "none": 0
+      },
+      "none": {
+        "lump_tight": 0,
+        "segregation_loose": 0,
+        "mix_deviation": 0,
+        "material_abnormal": 0,
+        "current_abnormal": 0,
+        "drywet_abnormal": 0,
+        "none": 20
+      }
+    }
+  },
+  "slumpRegression": {
+    "mae": 4.65,
+    "rmse": 6.363961030678928,
+    "r2": 0.8925729442970822,
+    "n": 40
+  },
+  "records": [
+    {
+      "batchId": "JB-C35-026-C",
+      "truthLabel": "异常",
+      "predLabel": "异常",
+      "truthRootCause": "drywet_abnormal",
+      "predRootCause": "drywet_abnormal",
+      "measuredSlump": 146,
+      "predSlump": 161,
+      "measuredSpread": 439,
+      "predSpread": 416,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "LS-C25-098-B",
+      "truthLabel": "异常",
+      "predLabel": "异常",
+      "truthRootCause": "drywet_abnormal",
+      "predRootCause": "drywet_abnormal",
+      "measuredSlump": 177,
+      "predSlump": 181,
+      "measuredSpread": 458,
+      "predSpread": 447,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "JB-C30-063-A",
+      "truthLabel": "异常",
+      "predLabel": "异常",
+      "truthRootCause": "drywet_abnormal",
+      "predRootCause": "drywet_abnormal",
+      "measuredSlump": 153,
+      "predSlump": 167,
+      "measuredSpread": 411,
+      "predSpread": 425,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "JB-C25-072-C",
+      "truthLabel": "异常",
+      "predLabel": "异常",
+      "truthRootCause": "current_abnormal",
+      "predRootCause": "lump_tight",
+      "measuredSlump": 188,
+      "predSlump": 201,
+      "measuredSpread": 532,
+      "predSpread": 522,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "LS-C30-084-A",
+      "truthLabel": "异常",
+      "predLabel": "异常",
+      "truthRootCause": "current_abnormal",
+      "predRootCause": "lump_tight",
+      "measuredSlump": 138,
+      "predSlump": 141,
+      "measuredSpread": 352,
+      "predSpread": 367,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "LS-C25-096-C",
+      "truthLabel": "异常",
+      "predLabel": "异常",
+      "truthRootCause": "material_abnormal",
+      "predRootCause": "material_abnormal",
+      "measuredSlump": 176,
+      "predSlump": 179,
+      "measuredSpread": 437,
+      "predSpread": 445,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "JB-C35-024-A",
+      "truthLabel": "异常",
+      "predLabel": "异常",
+      "truthRootCause": "material_abnormal",
+      "predRootCause": "material_abnormal",
+      "measuredSlump": 152,
+      "predSlump": 163,
+      "measuredSpread": 437,
+      "predSpread": 419,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "LS-C30-082-B",
+      "truthLabel": "异常",
+      "predLabel": "异常",
+      "truthRootCause": "material_abnormal",
+      "predRootCause": "material_abnormal",
+      "measuredSlump": 165,
+      "predSlump": 169,
+      "measuredSpread": 441,
+      "predSpread": 429,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "LS-C35-029-C",
+      "truthLabel": "异常",
+      "predLabel": "异常",
+      "truthRootCause": "mix_deviation",
+      "predRootCause": "drywet_abnormal",
+      "measuredSlump": 157,
+      "predSlump": 164,
+      "measuredSpread": 394,
+      "predSpread": 410,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "JB-C25-070-A",
+      "truthLabel": "异常",
+      "predLabel": "异常",
+      "truthRootCause": "mix_deviation",
+      "predRootCause": "drywet_abnormal",
+      "measuredSlump": 172,
+      "predSlump": 175,
+      "measuredSpread": 442,
+      "predSpread": 427,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "LS-C35-027-B",
+      "truthLabel": "异常",
+      "predLabel": "异常",
+      "truthRootCause": "segregation_loose",
+      "predRootCause": "segregation_loose",
+      "measuredSlump": 152,
+      "predSlump": 156,
+      "measuredSpread": 391,
+      "predSpread": 405,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "JB-C30-059-C",
+      "truthLabel": "异常",
+      "predLabel": "异常",
+      "truthRootCause": "segregation_loose",
+      "predRootCause": "segregation_loose",
+      "measuredSlump": 155,
+      "predSlump": 161,
+      "measuredSpread": 433,
+      "predSpread": 415,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "LS-C25-094-A",
+      "truthLabel": "异常",
+      "predLabel": "异常",
+      "truthRootCause": "segregation_loose",
+      "predRootCause": "segregation_loose",
+      "measuredSlump": 163,
+      "predSlump": 169,
+      "measuredSpread": 447,
+      "predSpread": 429,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "LS-C35-025-A",
+      "truthLabel": "异常",
+      "predLabel": "异常",
+      "truthRootCause": "lump_tight",
+      "predRootCause": "lump_tight",
+      "measuredSlump": 153,
+      "predSlump": 156,
+      "measuredSpread": 423,
+      "predSpread": 403,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "JB-C25-068-C",
+      "truthLabel": "异常",
+      "predLabel": "异常",
+      "truthRootCause": "lump_tight",
+      "predRootCause": "lump_tight",
+      "measuredSlump": 156,
+      "predSlump": 171,
+      "measuredSpread": 445,
+      "predSpread": 429,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "LS-C30-080-B",
+      "truthLabel": "异常",
+      "predLabel": "异常",
+      "truthRootCause": "lump_tight",
+      "predRootCause": "lump_tight",
+      "measuredSlump": 145,
+      "predSlump": 160,
+      "measuredSpread": 395,
+      "predSpread": 410,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "JB-C30-065-B",
+      "truthLabel": "合格",
+      "predLabel": "合格",
+      "truthRootCause": "none",
+      "predRootCause": "none",
+      "measuredSlump": 181,
+      "predSlump": 183,
+      "measuredSpread": 458,
+      "predSpread": 455,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "LS-C35-033-C",
+      "truthLabel": "合格",
+      "predLabel": "合格",
+      "truthRootCause": "none",
+      "predRootCause": "none",
+      "measuredSlump": 176,
+      "predSlump": 172,
+      "measuredSpread": 437,
+      "predSpread": 434,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "JB-C25-074-A",
+      "truthLabel": "合格",
+      "predLabel": "合格",
+      "truthRootCause": "none",
+      "predRootCause": "none",
+      "measuredSlump": 191,
+      "predSlump": 192,
+      "measuredSpread": 470,
+      "predSpread": 474,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "LS-C30-086-B",
+      "truthLabel": "合格",
+      "predLabel": "合格",
+      "truthRootCause": "none",
+      "predRootCause": "none",
+      "measuredSlump": 183,
+      "predSlump": 182,
+      "measuredSpread": 452,
+      "predSpread": 455,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "JB-C35-022-B",
+      "truthLabel": "合格",
+      "predLabel": "合格",
+      "truthRootCause": "none",
+      "predRootCause": "none",
+      "measuredSlump": 178,
+      "predSlump": 177,
+      "measuredSpread": 443,
+      "predSpread": 445,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "LS-C25-092-C",
+      "truthLabel": "合格",
+      "predLabel": "合格",
+      "truthRootCause": "none",
+      "predRootCause": "none",
+      "measuredSlump": 198,
+      "predSlump": 195,
+      "measuredSpread": 477,
+      "predSpread": 478,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "JB-C30-055-C",
+      "truthLabel": "合格",
+      "predLabel": "合格",
+      "truthRootCause": "none",
+      "predRootCause": "none",
+      "measuredSlump": 187,
+      "predSlump": 182,
+      "measuredSpread": 453,
+      "predSpread": 456,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "LS-C30-078-A",
+      "truthLabel": "合格",
+      "predLabel": "合格",
+      "truthRootCause": "none",
+      "predRootCause": "none",
+      "measuredSlump": 182,
+      "predSlump": 180,
+      "measuredSpread": 450,
+      "predSpread": 450,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "JB-C35-020-A",
+      "truthLabel": "合格",
+      "predLabel": "合格",
+      "truthRootCause": "none",
+      "predRootCause": "none",
+      "measuredSlump": 170,
+      "predSlump": 173,
+      "measuredSpread": 443,
+      "predSpread": 437,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "JB-C25-066-B",
+      "truthLabel": "合格",
+      "predLabel": "合格",
+      "truthRootCause": "none",
+      "predRootCause": "none",
+      "measuredSlump": 196,
+      "predSlump": 193,
+      "measuredSpread": 477,
+      "predSpread": 474,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "LS-C35-023-A",
+      "truthLabel": "合格",
+      "predLabel": "合格",
+      "truthRootCause": "none",
+      "predRootCause": "none",
+      "measuredSlump": 173,
+      "predSlump": 173,
+      "measuredSpread": 438,
+      "predSpread": 439,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "LS-C25-090-B",
+      "truthLabel": "合格",
+      "predLabel": "合格",
+      "truthRootCause": "none",
+      "predRootCause": "none",
+      "measuredSlump": 193,
+      "predSlump": 194,
+      "measuredSpread": 474,
+      "predSpread": 476,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "JB-C30-053-A",
+      "truthLabel": "合格",
+      "predLabel": "合格",
+      "truthRootCause": "none",
+      "predRootCause": "none",
+      "measuredSlump": 185,
+      "predSlump": 183,
+      "measuredSpread": 452,
+      "predSpread": 456,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "LS-C30-076-B",
+      "truthLabel": "异常",
+      "predLabel": "异常",
+      "truthRootCause": "mix_deviation",
+      "predRootCause": "drywet_abnormal",
+      "measuredSlump": 151,
+      "predSlump": 158,
+      "measuredSpread": 412,
+      "predSpread": 399,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "JB-C25-064-A",
+      "truthLabel": "合格",
+      "predLabel": "合格",
+      "truthRootCause": "none",
+      "predRootCause": "none",
+      "measuredSlump": 195,
+      "predSlump": 193,
+      "measuredSpread": 485,
+      "predSpread": 477,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "JB-C35-018-C",
+      "truthLabel": "合格",
+      "predLabel": "合格",
+      "truthRootCause": "none",
+      "predRootCause": "none",
+      "measuredSlump": 176,
+      "predSlump": 176,
+      "measuredSpread": 445,
+      "predSpread": 438,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "JB-C30-052-B",
+      "truthLabel": "异常",
+      "predLabel": "异常",
+      "truthRootCause": "current_abnormal",
+      "predRootCause": "lump_tight",
+      "measuredSlump": 120,
+      "predSlump": 123,
+      "measuredSpread": 329,
+      "predSpread": 340,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "JB-C30-051-A",
+      "truthLabel": "合格",
+      "predLabel": "合格",
+      "truthRootCause": "none",
+      "predRootCause": "none",
+      "measuredSlump": 182,
+      "predSlump": 184,
+      "measuredSpread": 459,
+      "predSpread": 459,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "LS-C30-075-C",
+      "truthLabel": "合格",
+      "predLabel": "合格",
+      "truthRootCause": "none",
+      "predRootCause": "none",
+      "measuredSlump": 188,
+      "predSlump": 186,
+      "measuredSpread": 461,
+      "predSpread": 464,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "LS-C25-088-A",
+      "truthLabel": "异常",
+      "predLabel": "异常",
+      "truthRootCause": "drywet_abnormal",
+      "predRootCause": "drywet_abnormal",
+      "measuredSlump": 161,
+      "predSlump": 164,
+      "measuredSpread": 426,
+      "predSpread": 412,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "LS-C35-021-B",
+      "truthLabel": "合格",
+      "predLabel": "合格",
+      "truthRootCause": "none",
+      "predRootCause": "none",
+      "measuredSlump": 176,
+      "predSlump": 177,
+      "measuredSpread": 441,
+      "predSpread": 442,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "LS-C30-074-A",
+      "truthLabel": "合格",
+      "predLabel": "合格",
+      "truthRootCause": "none",
+      "predRootCause": "none",
+      "measuredSlump": 182,
+      "predSlump": 182,
+      "measuredSpread": 456,
+      "predSpread": 453,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "LS-C30-073-B",
+      "truthLabel": "异常",
+      "predLabel": "异常",
+      "truthRootCause": "mix_deviation",
+      "predRootCause": "lump_tight",
+      "measuredSlump": 120,
+      "predSlump": 129,
+      "measuredSpread": 335,
+      "predSpread": 352,
+      "engine": "rule-fallback"
+    },
+    {
+      "batchId": "LS-C30-072-A",
+      "truthLabel": "合格",
+      "predLabel": "合格",
+      "truthRootCause": "none",
+      "predRootCause": "none",
+      "measuredSlump": 188,
+      "predSlump": 185,
+      "measuredSpread": 457,
+      "predSpread": 461,
+      "engine": "rule-fallback"
+    }
+  ]
+}

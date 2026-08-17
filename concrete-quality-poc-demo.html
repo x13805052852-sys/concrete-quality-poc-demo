@@ -1,0 +1,2362 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>龙山搅拌站 - 混凝土质量智能监控系统</title>
+  <style>
+    :root {
+      --bg-dark: #0d1117;
+      --bg-panel: #161b22;
+      --bg-card: #21262d;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --green: #3fb950;
+      --green-dim: #238636;
+      --red: #f85149;
+      --red-dim: #da3633;
+      --yellow: #d29922;
+      --yellow-dim: #9e6a03;
+      --blue: #58a6ff;
+      --blue-dim: #1f6feb;
+      --cyan: #39c5cf;
+      --orange: #f0883e;
+      --violet: #a371f7;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg-dark);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+      font-size: 13px;
+    }
+
+    .app { display: flex; flex-direction: column; height: 100vh; }
+
+    /* 顶部状态栏 */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      height: 48px;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .header-left { display: flex; align-items: center; gap: 20px; }
+
+    .logo { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; }
+
+    .logo-icon {
+      width: 28px; height: 28px;
+      background: linear-gradient(135deg, var(--blue-dim), var(--green-dim));
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .station-info { display: flex; align-items: center; gap: 16px; font-size: 12px; color: var(--text-muted); }
+    .station-info span { display: flex; align-items: center; gap: 4px; }
+
+    .header-right { display: flex; align-items: center; gap: 12px; }
+
+    .datetime { font-family: "SF Mono", Monaco, monospace; font-size: 14px; color: var(--cyan); }
+
+    .btn {
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg-card);
+      color: var(--text);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn:hover { background: #30363d; }
+
+    .btn-primary { background: var(--green-dim); border-color: var(--green-dim); }
+    .btn-primary:hover { background: #2ea043; }
+
+    /* 主内容区 */
+    .main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 260px 1fr 280px;
+      gap: 1px;
+      background: var(--border);
+      overflow: hidden;
+    }
+
+    .panel { background: var(--bg-panel); display: flex; flex-direction: column; overflow: hidden; }
+
+    .panel-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-card);
+    }
+
+    .panel-title {
+      font-weight: 600; font-size: 12px;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--text-muted);
+    }
+
+    .panel-body { flex: 1; padding: 12px; overflow-y: auto; }
+
+    /* LED指示灯 */
+    .led-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 10px;
+      background: var(--bg-dark);
+      border-radius: 4px;
+      margin-bottom: 6px;
+    }
+
+    .led-label { font-size: 12px; color: var(--text-muted); }
+
+    .led {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: #30363d;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+    }
+
+    .led.on-green { background: var(--green); box-shadow: 0 0 8px var(--green); }
+    .led.on-red { background: var(--red); box-shadow: 0 0 8px var(--red); animation: blink 1s infinite; }
+    .led.on-yellow { background: var(--yellow); box-shadow: 0 0 8px var(--yellow); }
+    .led.on-blue { background: var(--blue); box-shadow: 0 0 8px var(--blue); }
+
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    /* 数值显示 */
+    .value-card {
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 10px;
+      margin-bottom: 8px;
+    }
+
+    .value-label { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+    .value-number { font-family: "SF Mono", Monaco, monospace; font-size: 24px; font-weight: 600; color: var(--cyan); }
+    .value-unit { font-size: 12px; color: var(--text-muted); margin-left: 4px; }
+    .value-status { font-size: 11px; margin-top: 4px; }
+    .value-status.ok { color: var(--green); }
+    .value-status.warn { color: var(--yellow); }
+    .value-status.error { color: var(--red); }
+
+    /* 中央监控区 */
+    .center-panel { display: flex; flex-direction: column; overflow: hidden; }
+
+    /* 生产流程步骤 */
+    .process-steps { display: flex; gap: 4px; padding: 10px; background: var(--bg-card); flex-shrink: 0; }
+
+    .step {
+      flex: 1; text-align: center;
+      padding: 6px 4px;
+      background: var(--bg-dark);
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+
+    .step.active { border-color: var(--blue); background: rgba(88, 166, 255, 0.1); }
+    .step.done { border-color: var(--green-dim); background: rgba(63, 185, 80, 0.1); }
+    .step.warn { border-color: var(--yellow); background: rgba(210, 153, 34, 0.1); }
+
+    .step-num { font-size: 10px; color: var(--text-muted); }
+    .step-name { font-size: 11px; font-weight: 600; margin-top: 2px; }
+    .step-status { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+    /* 主内容布局 */
+    .main-content {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--border);
+      overflow: hidden;
+    }
+
+    .content-panel {
+      background: var(--bg-panel);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .content-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .content-title { font-size: 12px; font-weight: 600; color: var(--text-muted); }
+
+    .content-body { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* 视频面板 */
+    .video-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 8px;
+      gap: 8px;
+      overflow: hidden;
+    }
+
+    .video-main-box {
+      flex: 1;
+      position: relative;
+      background: #000;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .video-main-box.active { border-color: var(--cyan); }
+
+    .video-el {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: #111;
+    }
+
+    .video-label {
+      position: absolute;
+      top: 8px; left: 8px;
+      padding: 4px 8px;
+      background: rgba(0,0,0,0.8);
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .video-label.main { color: var(--cyan); border: 1px solid var(--cyan); }
+
+    .rec-dot {
+      width: 8px; height: 8px;
+      background: var(--red);
+      border-radius: 50%;
+      animation: blink 1s infinite;
+    }
+
+    .video-analysis {
+      position: absolute;
+      top: 36px; left: 8px;
+      padding: 8px;
+      background: rgba(0,0,0,0.75);
+      border-radius: 4px;
+      font-size: 11px;
+      max-width: 180px;
+    }
+
+    .analysis-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 3px 0;
+      border-bottom: 1px solid #333;
+    }
+
+    .analysis-row:last-child { border-bottom: none; }
+    .analysis-label { color: var(--text-muted); }
+    .analysis-value { font-family: monospace; }
+    .analysis-value.ok { color: var(--green); }
+    .analysis-value.warn { color: var(--yellow); }
+    .analysis-value.error { color: var(--red); }
+
+    .video-info {
+      position: absolute;
+      bottom: 8px; left: 8px; right: 8px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .detection-box {
+      position: absolute;
+      border: 2px solid var(--cyan);
+      border-radius: 2px;
+      pointer-events: none;
+    }
+
+    .detection-label {
+      position: absolute;
+      top: -18px; left: 0;
+      padding: 2px 6px;
+      background: var(--cyan);
+      color: #000;
+      font-size: 10px;
+      font-weight: 600;
+      border-radius: 2px;
+    }
+
+    /* 小视角区域 */
+    .video-sub-area {
+      display: flex;
+      gap: 8px;
+      height: 100px;
+      flex-shrink: 0;
+    }
+
+    .video-sub-box {
+      flex: 1;
+      position: relative;
+      background: #000;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    /* 电流图表区 */
+    .chart-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 8px;
+      gap: 8px;
+      overflow: hidden;
+    }
+
+    .chart-container {
+      flex: 1;
+      position: relative;
+      background: var(--bg-dark);
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .chart-canvas { width: 100%; height: 100%; display: block; }
+
+    .chart-overlay {
+      position: absolute;
+      top: 8px; left: 8px; right: 8px;
+      display: flex;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+
+    .chart-badge {
+      padding: 4px 8px;
+      background: rgba(0,0,0,0.7);
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: monospace;
+    }
+
+    .chart-badge.live { color: var(--green); border: 1px solid var(--green-dim); }
+
+    /* 预测指标 */
+    .predict-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .predict-item {
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .predict-label { font-size: 11px; color: var(--text-muted); }
+    .predict-value { font-family: "SF Mono", Monaco, monospace; font-size: 20px; font-weight: 600; margin: 4px 0; }
+    .predict-target { font-size: 10px; color: var(--text-muted); }
+
+    /* 右侧面板 */
+    .decision-box {
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+
+    .decision-box.judged { border-color: var(--green-dim); }
+    .decision-box.warn { border-color: var(--yellow); }
+    .decision-box.error { border-color: var(--red); }
+
+    .decision-title { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
+    .decision-result { font-size: 18px; font-weight: 700; }
+    .decision-result.ok { color: var(--green); }
+    .decision-result.warn { color: var(--yellow); }
+    .decision-result.error { color: var(--red); }
+    .decision-detail { font-size: 11px; color: var(--text-muted); margin-top: 6px; line-height: 1.5; }
+
+    /* 数据表格 */
+    .data-table { width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; }
+    .data-table th, .data-table td { padding: 6px 8px; text-align: left; border-bottom: 1px solid var(--border); }
+    .data-table th { color: var(--text-muted); font-weight: 500; background: var(--bg-card); }
+    .data-table td { font-family: "SF Mono", Monaco, monospace; font-size: 11px; }
+
+    /* Agent状态 */
+    .agent-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px;
+      background: var(--bg-dark);
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+
+    .agent-icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--violet), var(--blue));
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+    }
+
+    .agent-info { flex: 1; }
+    .agent-name { font-weight: 600; font-size: 12px; }
+    .agent-state { font-size: 11px; color: var(--text-muted); }
+
+    /* 底部操作栏 */
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      height: 44px;
+      background: var(--bg-panel);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .footer-left { display: flex; align-items: center; gap: 16px; }
+
+    .status-item { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .status-dot.online { background: var(--green); }
+    .status-dot.offline { background: var(--text-muted); }
+
+    .footer-right { display: flex; gap: 8px; }
+
+    .divider { height: 1px; background: var(--border); margin: 10px 0; }
+
+    .text-muted { color: var(--text-muted); }
+    .mono { font-family: "SF Mono", Monaco, monospace; }
+
+    /* 可拖拽日志窗口 */
+    .fixed-log-panel {
+      position: fixed;
+      bottom: 60px;
+      right: 20px;
+      width: 340px;
+      height: 220px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      resize: both;
+      overflow: hidden;
+      min-width: 280px;
+      min-height: 150px;
+    }
+
+    .fixed-log-panel.minimized {
+      height: 32px !important;
+      min-height: 32px;
+    }
+
+    .fixed-log-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 10px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      border-radius: 8px 8px 0 0;
+      flex-shrink: 0;
+      cursor: move;
+      user-select: none;
+    }
+
+    .fixed-log-header:active {
+      background: #2d333b;
+    }
+
+    .fixed-log-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--cyan);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .log-header-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .log-btn {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      font-size: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.2s;
+    }
+
+    .log-btn:hover { opacity: 0.8; }
+
+    .log-btn-minimize {
+      background: var(--yellow);
+      color: #000;
+    }
+
+    .log-btn-close {
+      background: var(--red);
+      color: #fff;
+    }
+
+    .fixed-log-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px;
+    }
+
+    .fixed-log-panel.minimized .fixed-log-body {
+      display: none;
+    }
+
+    .drag-handle {
+      display: inline-block;
+      width: 30px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin-right: 8px;
+    }
+
+    .log-item {
+      font-size: 10px;
+      padding: 3px 0;
+      border-bottom: 1px solid #252525;
+      display: flex;
+      gap: 6px;
+    }
+
+    .log-item:last-child { border-bottom: none; }
+    .log-time { color: var(--text-muted); flex-shrink: 0; width: 65px; }
+    .log-text { color: var(--text); }
+    .log-text.success { color: var(--green); }
+    .log-text.warn { color: var(--yellow); }
+    .log-text.error { color: var(--red); }
+
+    /* C30规则卡片 */
+    .rule-card {
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 8px;
+      margin-bottom: 8px;
+    }
+
+    .rule-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--orange);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .rule-item {
+      font-size: 10px;
+      padding: 3px 0;
+      color: var(--text-muted);
+      border-bottom: 1px solid #252525;
+    }
+
+    .rule-item:last-child { border-bottom: none; }
+
+    .rule-highlight {
+      color: var(--cyan);
+      font-family: monospace;
+    }
+
+    /* 持续优化层 */
+    .optimization-card {
+      background: linear-gradient(135deg, rgba(163, 113, 247, 0.1), rgba(88, 166, 255, 0.1));
+      border: 1px solid var(--violet);
+      border-radius: 4px;
+      padding: 8px;
+      margin-bottom: 8px;
+    }
+
+    .opt-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--violet);
+      margin-bottom: 6px;
+    }
+
+    .opt-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      padding: 2px 0;
+    }
+
+    .opt-label { color: var(--text-muted); }
+    .opt-value { font-family: monospace; }
+
+    /* 历史数据统计 */
+    .history-stats {
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 8px;
+      margin-bottom: 8px;
+    }
+
+    .history-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--green);
+      margin-bottom: 6px;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .stat-item {
+      text-align: center;
+      padding: 6px 4px;
+      background: var(--bg-card);
+      border-radius: 4px;
+    }
+
+    .stat-num {
+      font-family: "SF Mono", monospace;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .stat-num.ok { color: var(--green); }
+    .stat-num.warn { color: var(--yellow); }
+    .stat-num.error { color: var(--red); }
+
+    .stat-label {
+      font-size: 9px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* 历史批次列表 */
+    .history-list {
+      max-height: 80px;
+      overflow-y: auto;
+    }
+
+    .history-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      padding: 3px 0;
+      border-bottom: 1px solid #252525;
+    }
+
+    .history-row:last-child { border-bottom: none; }
+
+    .history-badge {
+      padding: 1px 4px;
+      border-radius: 2px;
+      font-size: 9px;
+    }
+
+    .history-badge.ok { background: var(--green-dim); color: #fff; }
+    .history-badge.adjusted { background: var(--yellow-dim); color: #000; }
+
+    /* 弹窗样式 */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-overlay.show { display: flex; }
+
+    .modal-box {
+      background: var(--bg-panel);
+      border: 1px solid var(--red);
+      border-radius: 8px;
+      width: 420px;
+      max-width: 90%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px;
+      background: rgba(248, 81, 73, 0.1);
+      border-bottom: 1px solid var(--border);
+      border-radius: 8px 8px 0 0;
+    }
+
+    .modal-icon {
+      width: 32px; height: 32px;
+      background: var(--red-dim);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .modal-title { font-size: 15px; font-weight: 600; color: var(--red); }
+
+    .modal-body { padding: 16px; }
+
+    .modal-reason {
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .modal-reason-title { font-size: 11px; color: var(--text-muted); margin-bottom: 8px; }
+
+    .modal-reason-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 0;
+      font-size: 12px;
+    }
+
+    .modal-reason-item::before {
+      content: '✗';
+      color: var(--red);
+      font-weight: bold;
+    }
+
+    .modal-suggestion {
+      background: rgba(88, 166, 255, 0.1);
+      border: 1px solid var(--blue-dim);
+      border-radius: 4px;
+      padding: 10px;
+      font-size: 12px;
+      color: var(--blue);
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .modal-btn {
+      padding: 8px 20px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      border: none;
+    }
+
+    .modal-btn-cancel {
+      background: var(--bg-card);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .modal-btn-confirm {
+      background: var(--blue-dim);
+      color: #fff;
+    }
+
+    /* 闭环执行状态 */
+    .loop-status {
+      padding: 8px 12px;
+      background: var(--bg-card);
+      border-radius: 4px;
+      margin-bottom: 8px;
+      border-left: 3px solid var(--border);
+    }
+
+    .loop-status.executing { border-left-color: var(--blue); background: rgba(88, 166, 255, 0.1); }
+    .loop-status.success { border-left-color: var(--green); background: rgba(63, 185, 80, 0.1); }
+    .loop-status.adjusting { border-left-color: var(--yellow); background: rgba(210, 153, 34, 0.1); }
+    .loop-status.failed { border-left-color: var(--red); background: rgba(248, 81, 73, 0.1); }
+
+    .loop-title { font-size: 11px; font-weight: 600; margin-bottom: 4px; }
+    .loop-detail { font-size: 10px; color: var(--text-muted); }
+
+    /* 特征详情卡片 */
+    .feature-detail {
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 8px;
+      margin-bottom: 6px;
+    }
+
+    .feature-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .feature-name { font-size: 11px; font-weight: 600; }
+    .feature-badge { font-size: 10px; padding: 2px 6px; border-radius: 3px; }
+    .feature-badge.ok { background: var(--green-dim); color: #fff; }
+    .feature-badge.warn { background: var(--yellow-dim); color: #000; }
+    .feature-badge.error { background: var(--red-dim); color: #fff; }
+
+    .feature-value-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--text-muted);
+      padding: 2px 0;
+    }
+
+    .feature-value-row span:last-child { font-family: monospace; color: var(--text); }
+
+    /* 质量台账 */
+    .ledger-section {
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 8px;
+      margin-bottom: 8px;
+    }
+
+    .ledger-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--cyan);
+      margin-bottom: 6px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .ledger-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      padding: 3px 0;
+    }
+
+    .ledger-label { color: var(--text-muted); }
+    .ledger-value { font-family: monospace; }
+
+    /* 自动执行日志 */
+    .auto-log {
+      max-height: 120px;
+      overflow-y: auto;
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 6px;
+    }
+
+    .log-item {
+      font-size: 10px;
+      padding: 3px 0;
+      border-bottom: 1px solid #252525;
+      display: flex;
+      gap: 6px;
+    }
+
+    .log-item:last-child { border-bottom: none; }
+    .log-time { color: var(--text-muted); flex-shrink: 0; }
+    .log-text { color: var(--text); }
+    .log-text.success { color: var(--green); }
+    .log-text.warn { color: var(--yellow); }
+    .log-text.error { color: var(--red); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- 顶部状态栏 -->
+    <header class="header">
+      <div class="header-left">
+        <div class="logo">
+          <div class="logo-icon">LS</div>
+          <span>龙山搅拌站 - 智能质量监控系统</span>
+        </div>
+        <div class="station-info">
+          <span>📍 1号生产线</span>
+          <span>🏷 LS-C30-072</span>
+          <span>📦 C30泵送</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="datetime" id="datetime">--</div>
+        <button class="btn btn-primary" id="startBtn" onclick="startMonitor()">开始监测</button>
+      </div>
+    </header>
+
+    <!-- 主内容 -->
+    <main class="main">
+      <!-- 左侧：数据源状态 -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">数据源状态</span>
+          <span id="dataSourceCount">0/6 在线</span>
+        </div>
+        <div class="panel-body">
+          <div class="led-row">
+            <span class="led-label">搅拌视频</span>
+            <div class="led" id="ledVideo"></div>
+          </div>
+          <div class="led-row">
+            <span class="led-label">卸料视频</span>
+            <div class="led" id="ledVideo2"></div>
+          </div>
+          <div class="divider"></div>
+
+          <div class="value-card">
+            <div class="value-label">实时电流</div>
+            <div>
+              <span class="value-number" id="liveCurrent">--</span>
+              <span class="value-unit">A</span>
+            </div>
+            <div class="value-status" id="currentStatus">--</div>
+          </div>
+          <div class="led-row">
+            <span class="led-label">PLC通讯</span>
+            <div class="led" id="ledPLC"></div>
+          </div>
+          <div class="divider"></div>
+
+          <div class="led-row">
+            <span class="led-label">ERP配比</span>
+            <div class="led" id="ledERP"></div>
+          </div>
+          <div class="value-card">
+            <div class="value-label">水灰比</div>
+            <span class="value-number mono" id="waterCement">--</span>
+          </div>
+          <div class="value-card">
+            <div class="value-label">浆骨比</div>
+            <span class="value-number mono" id="pasteAgg">--</span>
+          </div>
+          <div class="divider"></div>
+
+          <div class="led-row">
+            <span class="led-label">气象站</span>
+            <div class="led" id="ledWeather"></div>
+          </div>
+          <div class="value-card">
+            <div class="value-label">环境温度</div>
+            <span class="value-number mono" id="envTemp">--</span>
+            <span class="value-unit">℃</span>
+          </div>
+          <div class="divider"></div>
+
+          <div class="led-row">
+            <span class="led-label">运距数据</span>
+            <div class="led" id="ledDistance"></div>
+          </div>
+          <div class="value-card">
+            <div class="value-label">运输距离</div>
+            <span class="value-number mono" id="transDist">--</span>
+            <span class="value-unit">km</span>
+          </div>
+          <div class="divider"></div>
+
+          <div class="led-row">
+            <span class="led-label">设备状态</span>
+            <div class="led" id="ledEquip"></div>
+          </div>
+          <div class="value-card">
+            <div class="value-label">搅拌机效率</div>
+            <span class="value-number mono" id="mixerEff">--</span>
+            <span class="value-unit">%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 中央：主内容 -->
+      <div class="panel center-panel">
+        <!-- 生产流程步骤 -->
+        <div class="process-steps">
+          <div class="step" id="step1"><div class="step-num">01</div><div class="step-name">开盘</div><div class="step-status" id="step1Status">等待</div></div>
+          <div class="step" id="step2"><div class="step-num">02</div><div class="step-name">配比</div><div class="step-status" id="step2Status">--</div></div>
+          <div class="step" id="step3"><div class="step-num">03</div><div class="step-name">搅拌</div><div class="step-status" id="step3Status">--</div></div>
+          <div class="step" id="step4"><div class="step-num">04</div><div class="step-name">视觉</div><div class="step-status" id="step4Status">--</div></div>
+          <div class="step" id="step5"><div class="step-num">05</div><div class="step-name">达稳</div><div class="step-status" id="step5Status">--</div></div>
+          <div class="step" id="step6"><div class="step-num">06</div><div class="step-name">研判</div><div class="step-status" id="step6Status">--</div></div>
+          <div class="step" id="step7"><div class="step-num">07</div><div class="step-name">审批</div><div class="step-status" id="step7Status">--</div></div>
+          <div class="step" id="step8"><div class="step-num">08</div><div class="step-name">出料</div><div class="step-status" id="step8Status">--</div></div>
+        </div>
+
+        <!-- 主内容：左右布局 -->
+        <div class="main-content">
+          <!-- 左侧：视觉分析 -->
+          <div class="content-panel">
+            <div class="content-header">
+              <span class="content-title">📹 视觉分析</span>
+              <span id="visionStatus">离线</span>
+            </div>
+            <div class="content-body">
+              <div class="video-area">
+                <!-- 主视角：搅拌机内部 -->
+                <div class="video-main-box active" id="mainVideoBox">
+                  <video id="videoMain" class="video-el" autoplay muted loop playsinline>
+                    <source src="assets/mixer-interior.mp4" type="video/mp4">
+                  </video>
+                  <canvas id="videoMainOverlay" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;"></canvas>
+                  <div class="video-label main"><span class="rec-dot"></span> CAM-01 搅拌机内部</div>
+                  <div class="video-analysis" id="mainAnalysis">
+                    <div class="analysis-row"><span class="analysis-label">浆体均匀度</span><span class="analysis-value ok" id="vaUniformity">--</span></div>
+                    <div class="analysis-row"><span class="analysis-label">离析检测</span><span class="analysis-value ok" id="vaSegregation">--</span></div>
+                    <div class="analysis-row"><span class="analysis-label">流动性</span><span class="analysis-value ok" id="vaFlow">--</span></div>
+                    <div class="analysis-row"><span class="analysis-label">干湿状态</span><span class="analysis-value ok" id="vaDryWet">--</span></div>
+                  </div>
+                  <div class="video-info">
+                    <span id="videoMainTime">--:--:--</span>
+                    <span>1920x1080 | 25fps</span>
+                  </div>
+                  <div class="detection-box" id="detectBox" style="left:12%;top:15%;width:76%;height:70%;">
+                    <span class="detection-label">浆体区域</span>
+                  </div>
+                </div>
+
+                <!-- 小视角 -->
+                <div class="video-sub-area">
+                  <div class="video-sub-box">
+                    <video id="videoDischarge" class="video-el" autoplay muted loop playsinline>
+                      <source src="assets/mixer-discharge.mp4" type="video/mp4">
+                    </video>
+                    <div class="video-label" style="top:4px;left:4px;padding:2px 6px;font-size:9px;"><span class="rec-dot" style="width:6px;height:6px;"></span> CAM-02 卸料</div>
+                  </div>
+                  <div class="video-sub-box">
+                    <video id="videoManual" class="video-el" autoplay muted loop playsinline>
+                      <source src="assets/manual-monitor.mp4" type="video/mp4">
+                    </video>
+                    <div class="video-label" style="top:4px;left:4px;padding:2px 6px;font-size:9px;"><span class="rec-dot" style="width:6px;height:6px;"></span> CAM-03 人工监测</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 右侧：电流实时表 -->
+          <div class="content-panel">
+            <div class="content-header">
+              <span class="content-title">⚡ 电流实时监测</span>
+              <span id="chartStatus">离线</span>
+            </div>
+            <div class="content-body">
+              <div class="chart-area">
+                <!-- 电流曲线 -->
+                <div class="chart-container" id="chartContainer">
+                  <canvas id="mainChart" class="chart-canvas"></canvas>
+                  <div class="chart-overlay">
+                    <span class="chart-badge live" id="liveBadge">● 离线</span>
+                    <span class="chart-badge">稳态: <span id="stableAmp">--</span>A | 达稳: <span id="stableTime">--</span>s</span>
+                  </div>
+                </div>
+
+                <!-- 预测指标 -->
+                <div class="predict-row">
+                  <div class="predict-item">
+                    <div class="predict-label">坍落度</div>
+                    <div class="predict-value" id="predictSlump">--</div>
+                    <div class="predict-target">目标: 160-210mm</div>
+                  </div>
+                  <div class="predict-item">
+                    <div class="predict-label">扩展度</div>
+                    <div class="predict-value" id="predictSpread">--</div>
+                    <div class="predict-target">目标: 400-550mm</div>
+                  </div>
+                  <div class="predict-item">
+                    <div class="predict-label">倒坍时间</div>
+                    <div class="predict-value" id="predictSlumpTime">--</div>
+                    <div class="predict-target">目标: 3-8s</div>
+                  </div>
+                  <div class="predict-item">
+                    <div class="predict-label">浆体富裕度</div>
+                    <div class="predict-value" id="predictPasteRich">--</div>
+                    <div class="predict-target">目标: ≥15%</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右侧：决策输出 -->
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">GLM决策模块</span>
+          <span id="glmStatus">待判定</span>
+        </div>
+        <div class="panel-body">
+          <div class="agent-status">
+            <div class="agent-icon">🤖</div>
+            <div class="agent-info">
+              <div class="agent-name">质量Agent</div>
+              <div class="agent-state" id="agentState">待机中</div>
+            </div>
+          </div>
+
+          <!-- 闭环执行状态 -->
+          <div class="loop-status" id="loopStatus">
+            <div class="loop-title" id="loopTitle">闭环执行状态</div>
+            <div class="loop-detail" id="loopDetail">等待Agent判定后自动执行</div>
+          </div>
+
+          <div class="decision-box" id="decisionBox">
+            <div class="decision-title">判定结果</div>
+            <div class="decision-result" id="judgeResult">--</div>
+            <div class="decision-detail" id="judgeReason">等待数据融合完成</div>
+          </div>
+
+          <div class="decision-box">
+            <div class="decision-title">处置策略</div>
+            <div class="decision-result" id="strategy">--</div>
+            <div class="decision-detail" id="strategyDetail">--</div>
+          </div>
+
+          <div class="decision-box">
+            <div class="decision-title">根因推断</div>
+            <div class="decision-detail" id="rootCause">--</div>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- 视觉特征 X1 - 6类完整输出 -->
+          <div class="panel-title" style="margin-bottom:8px">视觉特征 X1 (6类)</div>
+
+          <div class="feature-detail">
+            <div class="feature-header">
+              <span class="feature-name">1. 浆体均匀度</span>
+              <span class="feature-badge" id="fUniformityBadge">--</span>
+            </div>
+            <div class="feature-value-row"><span>均匀度评分</span><span id="fUniformityVal">--</span></div>
+            <div class="feature-value-row"><span>二元判定</span><span id="fUniformityBin">--</span></div>
+          </div>
+
+          <div class="feature-detail">
+            <div class="feature-header">
+              <span class="feature-name">2. 离析状态</span>
+              <span class="feature-badge" id="fSegregationBadge">--</span>
+            </div>
+            <div class="feature-value-row"><span>离析检测</span><span id="fSegregationVal">--</span></div>
+            <div class="feature-value-row"><span>二元判定</span><span id="fSegregationBin">--</span></div>
+          </div>
+
+          <div class="feature-detail">
+            <div class="feature-header">
+              <span class="feature-name">3. 结团/结块</span>
+              <span class="feature-badge" id="fLumpBadge">--</span>
+            </div>
+            <div class="feature-value-row"><span>结团检测</span><span id="fLumpVal">--</span></div>
+            <div class="feature-value-row"><span>二元判定</span><span id="fLumpBin">--</span></div>
+          </div>
+
+          <div class="feature-detail">
+            <div class="feature-header">
+              <span class="feature-name">4. 干湿状态</span>
+              <span class="feature-badge" id="fDryWetBadge">--</span>
+            </div>
+            <div class="feature-value-row"><span>状态判定</span><span id="fDryWetVal">--</span></div>
+            <div class="feature-value-row"><span>偏离程度</span><span id="fDryWetDev">--</span></div>
+          </div>
+
+          <div class="feature-detail">
+            <div class="feature-header">
+              <span class="feature-name">5. 流动性</span>
+              <span class="feature-badge" id="fFlowBadge">--</span>
+            </div>
+            <div class="feature-value-row"><span>流动性评分</span><span id="fFlowVal">--</span></div>
+            <div class="feature-value-row"><span>等级评定</span><span id="fFlowGrade">--</span></div>
+          </div>
+
+          <div class="feature-detail">
+            <div class="feature-header">
+              <span class="feature-name">6. 罐壁挂料</span>
+              <span class="feature-badge" id="fWallBadge">--</span>
+            </div>
+            <div class="feature-value-row"><span>挂料比例</span><span id="fWallVal">--</span></div>
+            <div class="feature-value-row"><span>二元判定</span><span id="fWallBin">--</span></div>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- 电流特征 X2 - 4类完整输出 -->
+          <div class="panel-title" style="margin-bottom:8px">电流特征 X2 (4类)</div>
+
+          <div class="feature-detail">
+            <div class="feature-header">
+              <span class="feature-name">1. 稳态特征</span>
+              <span class="feature-badge" id="cStableBadge">--</span>
+            </div>
+            <div class="feature-value-row"><span>稳态电流</span><span id="cStableVal">--</span></div>
+            <div class="feature-value-row"><span>稳态持续时间</span><span id="cStableDur">--</span></div>
+            <div class="feature-value-row"><span>判定阈值</span><span id="cStableThresh">--</span></div>
+          </div>
+
+          <div class="feature-detail">
+            <div class="feature-header">
+              <span class="feature-name">2. 峰值特征</span>
+              <span class="feature-badge" id="cPeakBadge">--</span>
+            </div>
+            <div class="feature-value-row"><span>峰值电流</span><span id="cPeakVal">--</span></div>
+            <div class="feature-value-row"><span>谷值电流</span><span id="cValleyVal">--</span></div>
+            <div class="feature-value-row"><span>触发状态</span><span id="cPeakTrigger">--</span></div>
+          </div>
+
+          <div class="feature-detail">
+            <div class="feature-header">
+              <span class="feature-name">3. 延迟特征</span>
+              <span class="feature-badge" id="cDelayBadge">--</span>
+            </div>
+            <div class="feature-value-row"><span>达稳时间</span><span id="cDelayVal">--</span></div>
+            <div class="feature-value-row"><span>季节阈值</span><span id="cDelayThresh">--</span></div>
+            <div class="feature-value-row"><span>是否超时</span><span id="cDelayOver">--</span></div>
+          </div>
+
+          <div class="feature-detail">
+            <div class="feature-header">
+              <span class="feature-name">4. 趋势特征</span>
+              <span class="feature-badge" id="cTrendBadge">--</span>
+            </div>
+            <div class="feature-value-row"><span>波动幅度</span><span id="cWaveVal">--</span></div>
+            <div class="feature-value-row"><span>趋势方向</span><span id="cTrendDir">--</span></div>
+            <div class="feature-value-row"><span>稳定性</span><span id="cTrendStable">--</span></div>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- 质量台账 -->
+          <div class="panel-title" style="margin-bottom:8px">质量台账</div>
+
+          <div class="ledger-section">
+            <div class="ledger-title">基本信息</div>
+            <div class="ledger-row"><span class="ledger-label">车次编号</span><span class="ledger-value" id="lBatchNo">LS-C30-072</span></div>
+            <div class="ledger-row"><span class="ledger-label">混凝土标号</span><span class="ledger-value" id="lGrade">C30泵送</span></div>
+            <div class="ledger-row"><span class="ledger-label">生产线</span><span class="ledger-value" id="lLine">1号生产线</span></div>
+            <div class="ledger-row"><span class="ledger-label">监测时间</span><span class="ledger-value" id="lTime">--</span></div>
+          </div>
+
+          <div class="ledger-section">
+            <div class="ledger-title">视觉结论</div>
+            <div class="ledger-row"><span class="ledger-label">均匀度</span><span class="ledger-value" id="lUniformity">--</span></div>
+            <div class="ledger-row"><span class="ledger-label">离析状态</span><span class="ledger-value" id="lSegregation">--</span></div>
+            <div class="ledger-row"><span class="ledger-label">结团情况</span><span class="ledger-value" id="lLump">--</span></div>
+            <div class="ledger-row"><span class="ledger-label">流动性</span><span class="ledger-value" id="lFlow">--</span></div>
+          </div>
+
+          <div class="ledger-section">
+            <div class="ledger-title">电流结论</div>
+            <div class="ledger-row"><span class="ledger-label">稳态电流</span><span class="ledger-value" id="lStableAmp">--</span></div>
+            <div class="ledger-row"><span class="ledger-label">达稳时间</span><span class="ledger-value" id="lStableTime">--</span></div>
+            <div class="ledger-row"><span class="ledger-label">波动幅度</span><span class="ledger-value" id="lWave">--</span></div>
+          </div>
+
+          <div class="ledger-section">
+            <div class="ledger-title">配比结论</div>
+            <div class="ledger-row"><span class="ledger-label">水灰比</span><span class="ledger-value" id="lWaterCement">--</span></div>
+            <div class="ledger-row"><span class="ledger-label">浆骨比</span><span class="ledger-value" id="lPasteAgg">--</span></div>
+            <div class="ledger-row"><span class="ledger-label">执行偏差</span><span class="ledger-value" id="lRatioDev">--</span></div>
+          </div>
+
+          <div class="ledger-section">
+            <div class="ledger-title">模型预测</div>
+            <div class="ledger-row"><span class="ledger-label">坍落度</span><span class="ledger-value" id="lSlump">--</span></div>
+            <div class="ledger-row"><span class="ledger-label">扩展度</span><span class="ledger-value" id="lSpread">--</span></div>
+            <div class="ledger-row"><span class="ledger-label">倒坍时间</span><span class="ledger-value" id="lSlumpTime">--</span></div>
+            <div class="ledger-row"><span class="ledger-label">浆体富裕度</span><span class="ledger-value" id="lPasteRich">--</span></div>
+          </div>
+
+          <div class="ledger-section">
+            <div class="ledger-title">最终判定</div>
+            <div class="ledger-row"><span class="ledger-label">Agent判定</span><span class="ledger-value" id="lAgentJudge">--</span></div>
+            <div class="ledger-row"><span class="ledger-label">处置策略</span><span class="ledger-value" id="lStrategy">--</span></div>
+            <div class="ledger-row"><span class="ledger-label">人工确认</span><span class="ledger-value" id="lHumanConfirm">--</span></div>
+            <div class="ledger-row"><span class="ledger-label">放行时间</span><span class="ledger-value" id="lReleaseTime">--</span></div>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- C30泵送混凝土规则参考 -->
+          <div class="panel-title" style="margin-bottom:8px">C30泵送混凝土规则参考</div>
+
+          <div class="rule-card">
+            <div class="rule-title">📊 电流-坍落度关联规则</div>
+            <div class="rule-item">电流↑<span class="rule-highlight">5A</span> → 坍落度↓<span class="rule-highlight">25mm</span>、扩展度↓<span class="rule-highlight">40-50mm</span></div>
+            <div class="rule-item">电流↓<span class="rule-highlight">5A</span> → 坍落度↑<span class="rule-highlight">25mm</span>、扩展度↑<span class="rule-highlight">40-50mm</span></div>
+            <div class="rule-item">倒坍时间: 电流↑5A → 时间↑<span class="rule-highlight">1-1.5s</span></div>
+          </div>
+
+          <div class="rule-card">
+            <div class="rule-title">⏱ 搅拌时间规则</div>
+            <div class="rule-item">常温(20-25℃): 搅拌<span class="rule-highlight">90s</span>后电流稳定</div>
+            <div class="rule-item">冬季(≤10℃): 延长至<span class="rule-highlight">120-150s</span></div>
+            <div class="rule-item">剔除启动、投料瞬间波动电流</div>
+          </div>
+
+          <div class="rule-card">
+            <div class="rule-title">🎯 质量目标范围</div>
+            <div class="rule-item">坍落度: <span class="rule-highlight">160-210mm</span></div>
+            <div class="rule-item">扩展度: <span class="rule-highlight">400-550mm</span></div>
+            <div class="rule-item">倒坍时间: <span class="rule-highlight">3-8s</span></div>
+            <div class="rule-item">浆体富裕度: <span class="rule-highlight">≥15%</span></div>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- 持续优化层 -->
+          <div class="panel-title" style="margin-bottom:8px">持续优化层</div>
+
+          <div class="optimization-card">
+            <div class="opt-title">🔄 模型迭代状态</div>
+            <div class="opt-row"><span class="opt-label">模型版本</span><span class="opt-value">v2.3.1</span></div>
+            <div class="opt-row"><span class="opt-label">训练样本数</span><span class="opt-value" id="trainSamples">12,847</span></div>
+            <div class="opt-row"><span class="opt-label">上次优化</span><span class="opt-value">2026-06-09</span></div>
+            <div class="opt-row"><span class="opt-label">预测准确率</span><span class="opt-value" style="color:var(--green)">94.2%</span></div>
+          </div>
+
+          <div class="optimization-card">
+            <div class="opt-title">📈 质量标准动态更新</div>
+            <div class="opt-row"><span class="opt-label">坍落度阈值</span><span class="opt-value">自动调整中</span></div>
+            <div class="opt-row"><span class="opt-label">电流波动容忍度</span><span class="opt-value">±3A</span></div>
+            <div class="opt-row"><span class="opt-label">季节适配</span><span class="opt-value">夏季模式</span></div>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- 历史数据积累 -->
+          <div class="panel-title" style="margin-bottom:8px">历史数据积累</div>
+
+          <div class="history-stats">
+            <div class="history-title">📊 近30日统计</div>
+            <div class="stat-grid">
+              <div class="stat-item">
+                <div class="stat-num ok" id="totalBatches">847</div>
+                <div class="stat-label">总批次</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-num ok" id="passRate">96.8%</div>
+                <div class="stat-label">合格率</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-num warn" id="adjustCount">27</div>
+                <div class="stat-label">调整次数</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="history-stats">
+            <div class="history-title">📋 近5批次记录</div>
+            <div class="history-list" id="historyList">
+              <div class="history-row">
+                <span>LS-C30-071</span>
+                <span>186mm</span>
+                <span class="history-badge ok">合格</span>
+              </div>
+              <div class="history-row">
+                <span>LS-C30-070</span>
+                <span>192mm</span>
+                <span class="history-badge ok">合格</span>
+              </div>
+              <div class="history-row">
+                <span>LS-C30-069</span>
+                <span>175mm</span>
+                <span class="history-badge adjusted">调整后合格</span>
+              </div>
+              <div class="history-row">
+                <span>LS-C30-068</span>
+                <span>188mm</span>
+                <span class="history-badge ok">合格</span>
+              </div>
+              <div class="history-row">
+                <span>LS-C30-067</span>
+                <span>181mm</span>
+                <span class="history-badge ok">合格</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </main>
+
+    <!-- 可拖拽日志窗口 -->
+    <div class="fixed-log-panel" id="fixedLogPanel" style="display:none;">
+      <div class="fixed-log-header" id="logHeader">
+        <div class="fixed-log-title">
+          <span class="drag-handle"></span>
+          📋 自动执行日志
+          <span style="font-size:10px;color:var(--text-muted);margin-left:8px" id="logCaseType">案例: --</span>
+        </div>
+        <div class="log-header-actions">
+          <button class="log-btn log-btn-minimize" onclick="toggleLogPanel()" title="最小化">−</button>
+          <button class="log-btn log-btn-close" onclick="closeLogPanel()" title="关闭">×</button>
+        </div>
+      </div>
+      <div class="fixed-log-body" id="autoLog">
+        <div class="log-item"><span class="log-time">--:--:--</span><span class="log-text">等待监测启动...</span></div>
+      </div>
+    </div>
+
+    <!-- 不合格弹窗 -->
+    <div class="modal-overlay" id="failModal">
+      <div class="modal-box">
+        <div class="modal-header">
+          <div class="modal-icon">⚠</div>
+          <span class="modal-title">检测不合格 - 需人工确认</span>
+        </div>
+        <div class="modal-body">
+          <div class="modal-reason">
+            <div class="modal-reason-title">不合格指标：</div>
+            <div class="modal-reason-item">坍落度: 128mm (目标160-210mm，偏低32mm)</div>
+            <div class="modal-reason-item">扩展度: 352mm (目标400-550mm，偏低48mm)</div>
+            <div class="modal-reason-item">视觉检测: 浆体偏干，均匀度仅62%</div>
+          </div>
+          <div class="modal-suggestion">
+            💡 系统建议：自动延长搅拌30秒 + 补水2L，重新判定
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="modal-btn modal-btn-cancel" onclick="cancelAdjust()">暂停流程</button>
+          <button class="modal-btn modal-btn-confirm" onclick="confirmAdjust()">确认调整</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部状态栏 -->
+    <footer class="footer">
+      <div class="footer-left">
+        <div class="status-item">
+          <div class="status-dot" id="statusDot"></div>
+          <span id="statusText">离线</span>
+        </div>
+        <div class="status-item">
+          <span class="text-muted">帧号:</span>
+          <span class="mono" id="frameNo">--</span>
+        </div>
+        <div class="status-item">
+          <span class="text-muted">融合状态:</span>
+          <span id="fusionStatus">--</span>
+        </div>
+      </div>
+      <div class="footer-right">
+        <button class="btn btn-primary" id="approveBtn" onclick="approve()">确认放行</button>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    const state = {
+      stage: 0,
+      monitoring: false,
+      streamTick: 0,
+      currentValue: 0,
+      peakDetected: false,
+      chartData: [],
+      maxDataPoints: 200,
+      prediction: { slump: null, spread: null, slumpTime: null, pasteRich: null },
+      decision: { judgment: null, strategy: null, rootCause: null },
+      autoLog: [],
+      envTemp: 22,
+      caseType: 0,  // 0=首次(成功), 1=二次(失败), 循环
+      totalRuns: 0,  // 总运行次数
+      batchCounter: 72,  // 批次计数器
+      history: [
+        { id: 'LS-C30-071', slump: 186, status: 'ok' },
+        { id: 'LS-C30-070', slump: 192, status: 'ok' },
+        { id: 'LS-C30-069', slump: 175, status: 'adjusted' },
+        { id: 'LS-C30-068', slump: 188, status: 'ok' },
+        { id: 'LS-C30-067', slump: 181, status: 'ok' }
+      ],
+      stats: { total: 847, passRate: 96.8, adjustments: 27 }
+    };
+
+    const $ = id => document.getElementById(id);
+
+    // 拖拽功能
+    let isDragging = false;
+    let dragOffset = { x: 0, y: 0 };
+
+    function initDrag() {
+      const header = $('logHeader');
+      const panel = $('fixedLogPanel');
+
+      header.addEventListener('mousedown', (e) => {
+        if (e.target.classList.contains('log-btn')) return;
+        isDragging = true;
+        const rect = panel.getBoundingClientRect();
+        dragOffset.x = e.clientX - rect.left;
+        dragOffset.y = e.clientY - rect.top;
+        panel.style.transition = 'none';
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const panel = $('fixedLogPanel');
+        let newX = e.clientX - dragOffset.x;
+        let newY = e.clientY - dragOffset.y;
+
+        // 边界限制
+        newX = Math.max(0, Math.min(newX, window.innerWidth - panel.offsetWidth));
+        newY = Math.max(0, Math.min(newY, window.innerHeight - panel.offsetHeight));
+
+        panel.style.left = newX + 'px';
+        panel.style.top = newY + 'px';
+        panel.style.right = 'auto';
+        panel.style.bottom = 'auto';
+      });
+
+      document.addEventListener('mouseup', () => {
+        isDragging = false;
+        const panel = $('fixedLogPanel');
+        panel.style.transition = '';
+      });
+    }
+
+    function toggleLogPanel() {
+      const panel = $('fixedLogPanel');
+      panel.classList.toggle('minimized');
+      const btn = panel.querySelector('.log-btn-minimize');
+      btn.textContent = panel.classList.contains('minimized') ? '+' : '−';
+    }
+
+    function closeLogPanel() {
+      $('fixedLogPanel').style.display = 'none';
+    }
+
+    function init() {
+      updateDateTime();
+      setInterval(updateDateTime, 1000);
+      drawChart();
+      initDrag();
+    }
+
+    function updateDateTime() {
+      $('datetime').textContent = new Date().toLocaleString('zh-CN', { hour12: false });
+    }
+
+    function setLed(id, status) {
+      const el = $(id);
+      el.className = 'led';
+      if (status === 'green') el.classList.add('on-green');
+      else if (status === 'red') el.classList.add('on-red');
+      else if (status === 'yellow') el.classList.add('on-yellow');
+      else if (status === 'blue') el.classList.add('on-blue');
+    }
+
+    function addLog(text, type = '') {
+      const time = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+      state.autoLog.unshift({ time, text, type });
+      if (state.autoLog.length > 30) state.autoLog.pop();
+      renderLog();
+    }
+
+    function renderLog() {
+      const logEl = $('autoLog');
+      logEl.innerHTML = state.autoLog.map(item =>
+        `<div class="log-item"><span class="log-time">${item.time}</span><span class="log-text ${item.type}">${item.text}</span></div>`
+      ).join('');
+    }
+
+    function updateHistory(isAdjusted = false) {
+      // 更新批次编号
+      state.batchCounter++;
+      const batchId = `LS-C30-${String(state.batchCounter).padStart(3, '0')}`;
+
+      // 添加到历史记录
+      const slump = state.caseType === 0 ? 184 : 178;  // 合格184，调整后178
+      state.history.unshift({
+        id: batchId,
+        slump: slump,
+        status: isAdjusted ? 'adjusted' : 'ok'
+      });
+
+      // 只保留最近5条
+      if (state.history.length > 5) state.history.pop();
+
+      // 更新统计
+      state.stats.total++;
+      if (isAdjusted) state.stats.adjustments++;
+      else {
+        // 重新计算合格率
+        const passCount = state.history.filter(h => h.status === 'ok').length;
+        state.stats.passRate = Math.round((state.stats.total - state.stats.adjustments) / state.stats.total * 1000) / 10;
+      }
+
+      // 更新训练样本数
+      const trainSamples = 12847 + state.stats.total;
+      $('trainSamples').textContent = trainSamples.toLocaleString();
+
+      // 更新统计显示
+      $('totalBatches').textContent = state.stats.total;
+      $('passRate').textContent = state.stats.passRate.toFixed(1) + '%';
+      $('adjustCount').textContent = state.stats.adjustments;
+
+      // 更新历史列表
+      const historyList = $('historyList');
+      historyList.innerHTML = state.history.map(item => `
+        <div class="history-row">
+          <span>${item.id}</span>
+          <span>${item.slump}mm</span>
+          <span class="history-badge ${item.status}">${item.status === 'ok' ? '合格' : '调整后合格'}</span>
+        </div>
+      `).join('');
+
+      // 更新批次编号显示
+      $('lBatchNo').textContent = batchId;
+    }
+
+    function resetState() {
+      console.log('resetState called');
+      // 清除定时器
+      if (state.streamInterval) {
+        clearInterval(state.streamInterval);
+        state.streamInterval = null;
+      }
+
+      state.stage = 0;
+      state.monitoring = false;
+      state.streamTick = 0;
+      state.peakDetected = false;
+      state.chartData = [];
+      state.prediction = { slump: null, spread: null, slumpTime: null, pasteRich: null };
+      state.decision = { judgment: null, strategy: null, rootCause: null };
+      console.log('State reset complete');
+
+      // 重置UI
+      $('startBtn').textContent = '开始监测';
+      $('startBtn').disabled = false;
+      $('liveCurrent').textContent = '--';
+      $('currentStatus').textContent = '--';
+      $('frameNo').textContent = '--';
+      $('statusDot').className = 'status-dot offline';
+      $('statusText').textContent = '离线';
+      $('fusionStatus').textContent = '--';
+
+      ['ledVideo', 'ledVideo2', 'ledPLC', 'ledERP', 'ledWeather', 'ledDistance', 'ledEquip'].forEach(id => {
+        $(id).className = 'led';
+      });
+
+      $('dataSourceCount').textContent = '0/6 在线';
+      $('waterCement').textContent = '--';
+      $('pasteAgg').textContent = '--';
+      $('envTemp').textContent = '--';
+      $('transDist').textContent = '--';
+      $('mixerEff').textContent = '--';
+
+      // 重置预测值
+      $('predictSlump').textContent = '--';
+      $('predictSpread').textContent = '--';
+      $('predictSlumpTime').textContent = '--';
+      $('predictPasteRich').textContent = '--';
+
+      // 重置决策
+      $('judgeResult').textContent = '--';
+      $('judgeResult').className = 'decision-result';
+      $('judgeReason').textContent = '等待数据融合完成';
+      $('strategy').textContent = '--';
+      $('strategy').className = 'decision-result';
+      $('strategyDetail').textContent = '--';
+      $('rootCause').textContent = '--';
+      $('decisionBox').className = 'decision-box';
+      $('glmStatus').textContent = '待判定';
+      $('agentState').textContent = '待机中';
+
+      // 重置特征 - 视觉特征有不同结构
+      const visualFeatures = ['fUniformity', 'fSegregation', 'fLump', 'fWall'];
+      visualFeatures.forEach(prefix => {
+        $(prefix + 'Val').textContent = '--';
+        $(prefix + 'Bin').textContent = '--';
+        $(prefix + 'Badge').textContent = '--';
+        $(prefix + 'Badge').className = 'feature-badge';
+      });
+
+      // fDryWet 特殊处理
+      $('fDryWetVal').textContent = '--';
+      $('fDryWetDev').textContent = '--';
+      $('fDryWetBadge').textContent = '--';
+      $('fDryWetBadge').className = 'feature-badge';
+
+      // fFlow 特殊处理
+      $('fFlowVal').textContent = '--';
+      $('fFlowGrade').textContent = '--';
+      $('fFlowBadge').textContent = '--';
+      $('fFlowBadge').className = 'feature-badge';
+
+      ['cStable', 'cPeak', 'cDelay'].forEach(prefix => {
+        $(prefix + 'Val').textContent = '--';
+        $(prefix + 'Badge').textContent = '--';
+        $(prefix + 'Badge').className = 'feature-badge';
+      });
+      $('cStableDur').textContent = '--';
+      $('cStableThresh').textContent = '--';
+      $('cValleyVal').textContent = '--';
+      $('cPeakTrigger').textContent = '--';
+      $('cDelayThresh').textContent = '--';
+      $('cDelayOver').textContent = '--';
+      $('cWaveVal').textContent = '--';
+      $('cTrendDir').textContent = '--';
+      $('cTrendStable').textContent = '--';
+
+      // 重置台账
+      $('lTime').textContent = '--';
+      $('lUniformity').textContent = '--';
+      $('lSegregation').textContent = '--';
+      $('lLump').textContent = '--';
+      $('lFlow').textContent = '--';
+      $('lStableAmp').textContent = '--';
+      $('lStableTime').textContent = '--';
+      $('lWave').textContent = '--';
+      $('lWaterCement').textContent = '--';
+      $('lPasteAgg').textContent = '--';
+      $('lRatioDev').textContent = '--';
+      $('lSlump').textContent = '--';
+      $('lSpread').textContent = '--';
+      $('lSlumpTime').textContent = '--';
+      $('lPasteRich').textContent = '--';
+      $('lAgentJudge').textContent = '--';
+      $('lStrategy').textContent = '--';
+      $('lHumanConfirm').textContent = '--';
+      $('lReleaseTime').textContent = '--';
+
+      // 重置闭环状态
+      $('loopStatus').className = 'loop-status';
+      $('loopTitle').textContent = '闭环执行状态';
+      $('loopDetail').textContent = '等待Agent判定后自动执行';
+
+      // 重置步骤
+      updateSteps();
+      drawChart();
+    }
+
+    function startMonitor() {
+      console.log('startMonitor called, monitoring:', state.monitoring);
+      if (state.monitoring) return;
+
+      try {
+        // 重置状态
+        resetState();
+        state.autoLog = [];
+        renderLog();
+      } catch (e) {
+        console.error('Error in resetState:', e);
+        return;
+      }
+
+      console.log('Proceeding with monitoring...');
+
+      // 确定案例类型
+      state.caseType = state.totalRuns % 2;  // 0=成功, 1=失败
+      state.totalRuns++;
+
+      $('logCaseType').textContent = state.caseType === 0 ? '案例: 合格' : '案例: 不合格';
+      $('fixedLogPanel').style.display = 'flex';
+
+      state.monitoring = true;
+      state.stage = 1;
+
+      $('startBtn').textContent = '监测中...';
+      $('startBtn').disabled = true;
+
+      addLog('监测系统启动', 'success');
+      addLog(state.caseType === 0 ? '本批次预期: 合格案例' : '本批次预期: 不合格案例', 'warn');
+      addLog('正在连接数据源...');
+
+      setTimeout(() => {
+        setLed('ledVideo', 'green');
+        setLed('ledVideo2', 'green');
+        setLed('ledPLC', 'green');
+        setLed('ledERP', 'green');
+        setLed('ledWeather', 'green');
+        setLed('ledDistance', 'green');
+        setLed('ledEquip', 'green');
+        $('dataSourceCount').textContent = '6/6 在线';
+
+        $('waterCement').textContent = '0.42';
+        $('pasteAgg').textContent = '0.38';
+        $('envTemp').textContent = '22';
+        $('transDist').textContent = '12.5';
+        $('mixerEff').textContent = '94';
+
+        $('visionStatus').textContent = '在线';
+        $('chartStatus').textContent = 'LIVE';
+        $('liveBadge').textContent = '● LIVE';
+
+        // 启动视频播放
+        ['videoMain', 'videoDischarge', 'videoManual'].forEach(id => {
+          const video = $(id);
+          if (video) video.play().catch(e => console.log('Video play error:', id, e));
+        });
+
+        addLog('6路数据源全部在线', 'success');
+        addLog('视频流开始采集');
+        addLog('电流传感器接入成功');
+
+        state.stage = 2;
+        startDataStream();
+      }, 300);
+    }
+
+    function startDataStream() {
+      if (state.streamInterval) return;
+
+      state.streamInterval = setInterval(() => {
+        state.streamTick++;
+
+        const t = state.streamTick / 20;
+        const base = 62;
+        const peak = Math.exp(-Math.pow((t % 1) - 0.3, 2) / 0.01) * 25;
+        const noise = Math.sin(t * 5) * 2 + Math.random() * 2;
+        state.currentValue = Math.round((base + peak + noise) * 10) / 10;
+
+        $('liveCurrent').textContent = state.currentValue.toFixed(1);
+        $('currentStatus').textContent = state.currentValue > 70 ? '偏高' : '正常';
+        $('currentStatus').className = 'value-status ' + (state.currentValue > 70 ? 'warn' : 'ok');
+        $('frameNo').textContent = '#' + String(state.streamTick).padStart(5, '0');
+        $('statusDot').className = 'status-dot online';
+        $('statusText').textContent = '在线';
+        $('fusionStatus').textContent = '融合中';
+        $('videoMainTime').textContent = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+
+        state.chartData.push(state.currentValue);
+        if (state.chartData.length > state.maxDataPoints) state.chartData.shift();
+
+        updateSteps();
+        drawChart();
+
+        // 电流峰值自动触发视频抓拍 - 缩短时间
+        if (state.currentValue > 75 && !state.peakDetected && state.stage === 2 && state.streamTick > 30) {
+          state.peakDetected = true;
+          addLog('⚡ 电流峰值自动触发视频抓拍', 'warn');
+          triggerAnalysis();
+        }
+
+        // Agent自动研判 - 缩短时间
+        if (state.streamTick === 120 && state.stage === 2) {
+          runAgentDecision();
+        }
+      }, 100);
+    }
+
+    function updateSteps() {
+      const steps = ['step1', 'step2', 'step3', 'step4', 'step5', 'step6', 'step7', 'step8'];
+      const statusMap = {
+        0: ['等待', '', '', '', '', '', '', ''],
+        1: ['完成', '同步中', '', '', '', '', '', ''],
+        2: ['完成', '完成', '搅拌中', '采集中', '分析中', '', '', ''],
+        3: ['完成', '完成', '完成', '完成', '完成', '已研判', '待确认', ''],
+        4: ['完成', '完成', '完成', '完成', '完成', '完成', '已确认', '已出料']
+      };
+
+      const status = statusMap[state.stage] || statusMap[0];
+      steps.forEach((id, i) => {
+        const el = $(id);
+        el.className = 'step';
+        if (status[i] === '完成') el.classList.add('done');
+        else if (status[i] && status[i] !== '等待') el.classList.add('active');
+        $(id + 'Status').textContent = status[i] || '--';
+      });
+    }
+
+    function drawChart() {
+      const canvas = $('mainChart');
+      if (!canvas) return;
+
+      const container = $('chartContainer');
+      const rect = container.getBoundingClientRect();
+
+      canvas.width = rect.width * 2;
+      canvas.height = rect.height * 2;
+
+      const ctx = canvas.getContext('2d');
+      ctx.scale(2, 2);
+
+      const width = rect.width;
+      const height = rect.height;
+
+      ctx.fillStyle = '#0d1117';
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.strokeStyle = '#21262d';
+      ctx.lineWidth = 1;
+
+      const padding = { top: 30, right: 20, bottom: 30, left: 50 };
+      const chartWidth = width - padding.left - padding.right;
+      const chartHeight = height - padding.top - padding.bottom;
+
+      for (let i = 0; i <= 4; i++) {
+        const y = padding.top + i * (chartHeight / 4);
+        ctx.beginPath();
+        ctx.moveTo(padding.left, y);
+        ctx.lineTo(width - padding.right, y);
+        ctx.stroke();
+      }
+
+      for (let i = 0; i <= 5; i++) {
+        const x = padding.left + i * (chartWidth / 5);
+        ctx.beginPath();
+        ctx.moveTo(x, padding.top);
+        ctx.lineTo(x, height - padding.bottom);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = '#8b949e';
+      ctx.font = '10px SF Mono, monospace';
+      ctx.textAlign = 'right';
+      for (let i = 0; i <= 4; i++) {
+        const y = padding.top + i * (chartHeight / 4);
+        const val = 100 - i * 20;
+        ctx.fillText(val + 'A', padding.left - 8, y + 4);
+      }
+
+      if (state.chartData.length > 1) {
+        const data = state.chartData;
+        const xScale = chartWidth / state.maxDataPoints;
+        const yScale = chartHeight / 80;
+        const yOffset = padding.top + chartHeight;
+
+        ctx.strokeStyle = state.stage >= 3 ? '#3fb950' : '#58a6ff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+
+        const startIdx = Math.max(0, data.length - state.maxDataPoints);
+        for (let i = startIdx; i < data.length; i++) {
+          const x = padding.left + (i - startIdx) * xScale;
+          const y = yOffset - (data[i] - 40) * yScale;
+          if (i === startIdx) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        if (data.length > 0) {
+          const lastIdx = data.length - 1;
+          const lastX = padding.left + (lastIdx - startIdx) * xScale;
+          const lastY = yOffset - (data[lastIdx] - 40) * yScale;
+          ctx.fillStyle = state.stage >= 3 ? '#3fb950' : '#58a6ff';
+          ctx.beginPath();
+          ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
+
+    function triggerAnalysis() {
+      addLog('视觉模型开始分析关键帧...');
+
+      $('stableAmp').textContent = state.caseType === 0 ? '62' : '58';
+      $('stableTime').textContent = state.caseType === 0 ? '88' : '95';
+
+      // 根据案例类型设置不同的视觉特征
+      let visualFeatures;
+      if (state.caseType === 0) {
+        // 成功案例
+        visualFeatures = {
+          uniformity: { value: '88%', binary: '1=均匀', status: 'ok' },
+          segregation: { value: '未检出', binary: '0=否', status: 'ok' },
+          lump: { value: '未检出', binary: '0=否', status: 'ok' },
+          dryWet: { value: '适中', deviation: '0%', status: 'ok' },
+          flow: { value: '82%', grade: '良好', status: 'ok' },
+          wall: { value: '12%', binary: '0=正常', status: 'ok' }
+        };
+      } else {
+        // 失败案例
+        visualFeatures = {
+          uniformity: { value: '62%', binary: '0=不均匀', status: 'error' },
+          segregation: { value: '轻微离析', binary: '1=是', status: 'warn' },
+          lump: { value: '未检出', binary: '0=否', status: 'ok' },
+          dryWet: { value: '偏干', deviation: '-15%', status: 'error' },
+          flow: { value: '58%', grade: '较差', status: 'warn' },
+          wall: { value: '28%', binary: '1=异常', status: 'warn' }
+        };
+      }
+
+      // 更新视频叠加层
+      $('vaUniformity').textContent = visualFeatures.uniformity.value;
+      $('vaUniformity').className = 'analysis-value ' + visualFeatures.uniformity.status;
+      $('vaSegregation').textContent = visualFeatures.segregation.value;
+      $('vaSegregation').className = 'analysis-value ' + visualFeatures.segregation.status;
+      $('vaFlow').textContent = visualFeatures.flow.value;
+      $('vaFlow').className = 'analysis-value ' + visualFeatures.flow.status;
+      $('vaDryWet').textContent = visualFeatures.dryWet.value;
+      $('vaDryWet').className = 'analysis-value ' + visualFeatures.dryWet.status;
+
+      // 更新详细特征面板
+      $('fUniformityVal').textContent = visualFeatures.uniformity.value;
+      $('fUniformityBin').textContent = visualFeatures.uniformity.binary;
+      $('fUniformityBadge').textContent = visualFeatures.uniformity.status === 'ok' ? '合格' : '异常';
+      $('fUniformityBadge').className = 'feature-badge ' + visualFeatures.uniformity.status;
+
+      $('fSegregationVal').textContent = visualFeatures.segregation.value;
+      $('fSegregationBin').textContent = visualFeatures.segregation.binary;
+      $('fSegregationBadge').textContent = visualFeatures.segregation.status === 'ok' ? '合格' : '异常';
+      $('fSegregationBadge').className = 'feature-badge ' + visualFeatures.segregation.status;
+
+      $('fLumpVal').textContent = visualFeatures.lump.value;
+      $('fLumpBin').textContent = visualFeatures.lump.binary;
+      $('fLumpBadge').textContent = visualFeatures.lump.status === 'ok' ? '合格' : '异常';
+      $('fLumpBadge').className = 'feature-badge ' + visualFeatures.lump.status;
+
+      $('fDryWetVal').textContent = visualFeatures.dryWet.value;
+      $('fDryWetDev').textContent = visualFeatures.dryWet.deviation;
+      $('fDryWetBadge').textContent = visualFeatures.dryWet.status === 'ok' ? '合格' : '异常';
+      $('fDryWetBadge').className = 'feature-badge ' + visualFeatures.dryWet.status;
+
+      $('fFlowVal').textContent = visualFeatures.flow.value;
+      $('fFlowGrade').textContent = visualFeatures.flow.grade;
+      $('fFlowBadge').textContent = visualFeatures.flow.status === 'ok' ? '合格' : '异常';
+      $('fFlowBadge').className = 'feature-badge ' + visualFeatures.flow.status;
+
+      $('fWallVal').textContent = visualFeatures.wall.value;
+      $('fWallBin').textContent = visualFeatures.wall.binary;
+      $('fWallBadge').textContent = visualFeatures.wall.status === 'ok' ? '合格' : '异常';
+      $('fWallBadge').className = 'feature-badge ' + visualFeatures.wall.status;
+
+      if (state.caseType === 0) {
+        addLog('视觉特征提取完成: 6类特征全部合格', 'success');
+      } else {
+        addLog('视觉特征提取完成: 检测到异常', 'error');
+      }
+
+      // 电流特征
+      const isWinter = state.envTemp <= 10;
+      const stableThreshold = isWinter ? '120-150s' : '90s';
+
+      const currentFeatures = {
+        stable: { amp: state.caseType === 0 ? '62A' : '58A', duration: '12s', threshold: '60-65A', status: state.caseType === 0 ? 'ok' : 'warn' },
+        peak: { peak: state.caseType === 0 ? '85A' : '78A', valley: '48A', trigger: '已触发', status: 'ok' },
+        delay: { time: state.caseType === 0 ? '88s' : '95s', threshold: stableThreshold, overtime: '否', status: 'ok' },
+        trend: { wave: state.caseType === 0 ? '8A' : '15A', direction: state.caseType === 0 ? '平稳' : '波动', stability: state.caseType === 0 ? '稳定' : '不稳定', status: state.caseType === 0 ? 'ok' : 'warn' }
+      };
+
+      // 更新电流特征面板
+      $('cStableVal').textContent = currentFeatures.stable.amp;
+      $('cStableDur').textContent = currentFeatures.stable.duration;
+      $('cStableThresh').textContent = currentFeatures.stable.threshold;
+      $('cStableBadge').textContent = currentFeatures.stable.status === 'ok' ? '合格' : '偏低';
+      $('cStableBadge').className = 'feature-badge ' + currentFeatures.stable.status;
+
+      $('cPeakVal').textContent = currentFeatures.peak.peak;
+      $('cValleyVal').textContent = currentFeatures.peak.valley;
+      $('cPeakTrigger').textContent = currentFeatures.peak.trigger;
+      $('cPeakBadge').textContent = '合格';
+      $('cPeakBadge').className = 'feature-badge ok';
+
+      $('cDelayVal').textContent = currentFeatures.delay.time;
+      $('cDelayThresh').textContent = currentFeatures.delay.threshold;
+      $('cDelayOver').textContent = currentFeatures.delay.overtime;
+      $('cDelayBadge').textContent = '合格';
+      $('cDelayBadge').className = 'feature-badge ok';
+
+      $('cWaveVal').textContent = currentFeatures.trend.wave;
+      $('cTrendDir').textContent = currentFeatures.trend.direction;
+      $('cTrendStable').textContent = currentFeatures.trend.stability;
+      $('cTrendBadge').textContent = currentFeatures.trend.status === 'ok' ? '合格' : '异常';
+      $('cTrendBadge').className = 'feature-badge ' + currentFeatures.trend.status;
+
+      addLog('电流特征提取完成', state.caseType === 0 ? 'success' : 'warn');
+      $('agentState').textContent = '分析中...';
+    }
+
+    function runAgentDecision() {
+      state.stage = 3;
+      addLog('GLM决策模块开始研判...');
+
+      if (state.caseType === 0) {
+        // 成功案例
+        state.prediction = { slump: 184, spread: 468, slumpTime: 5.2, pasteRich: 18.5 };
+
+        $('predictSlump').textContent = '184';
+        $('predictSpread').textContent = '468';
+        $('predictSlumpTime').textContent = '5.2';
+        $('predictPasteRich').textContent = '18.5';
+
+        state.decision = {
+          judgment: '合格',
+          strategy: '建议放行',
+          rootCause: '电流稳定(62A)、视觉正常(均匀度88%)、配比执行准确(水灰比0.42)，四项指标均在目标范围内。'
+        };
+
+        $('judgeResult').textContent = '合格';
+        $('judgeResult').className = 'decision-result ok';
+        $('judgeReason').textContent = '坍落度184mm、扩展度468mm、倒坍时间5.2s、浆体富裕度18.5%';
+        $('strategy').textContent = '建议放行';
+        $('strategy').className = 'decision-result ok';
+        $('strategyDetail').textContent = '终止搅拌 → 执行出料 → 全参数归档';
+        $('rootCause').textContent = state.decision.rootCause;
+
+        $('decisionBox').classList.add('judged');
+        $('glmStatus').textContent = '已判定';
+        $('agentState').textContent = '研判完成';
+
+        addLog('Agent判定结果: 合格', 'success');
+        updateLedger();
+        updateSteps();
+
+        setTimeout(() => executeClosedLoop(), 500);
+
+      } else {
+        // 失败案例
+        state.prediction = { slump: 128, spread: 352, slumpTime: 8.5, pasteRich: 12.3 };
+
+        $('predictSlump').textContent = '128';
+        $('predictSpread').textContent = '352';
+        $('predictSlumpTime').textContent = '8.5';
+        $('predictPasteRich').textContent = '12.3';
+
+        state.decision = {
+          judgment: '不合格',
+          strategy: '需人工确认调整',
+          rootCause: '坍落度偏低(128mm < 160mm)、扩展度不足(352mm < 400mm)、视觉检测浆体偏干均匀度仅62%。'
+        };
+
+        $('judgeResult').textContent = '不合格';
+        $('judgeResult').className = 'decision-result error';
+        $('judgeReason').textContent = '坍落度128mm(偏低)、扩展度352mm(偏低)、倒坍时间8.5s(偏长)';
+        $('strategy').textContent = '需人工确认';
+        $('strategy').className = 'decision-result warn';
+        $('strategyDetail').textContent = '等待人工确认后执行自动调整';
+        $('rootCause').textContent = state.decision.rootCause;
+
+        $('decisionBox').classList.add('error');
+        $('glmStatus').textContent = '异常';
+        $('agentState').textContent = '等待人工确认';
+
+        addLog('Agent判定结果: 不合格', 'error');
+        updateLedger();
+        updateSteps();
+
+        // 显示弹窗
+        setTimeout(() => {
+          $('failModal').classList.add('show');
+          addLog('弹窗显示: 等待人工确认调整方案', 'warn');
+        }, 500);
+      }
+    }
+
+    function confirmAdjust() {
+      $('failModal').classList.remove('show');
+      addLog('人工确认调整方案', 'success');
+      addLog('开始执行自动调整: 延长搅拌30秒 + 补水2L', 'warn');
+
+      $('loopStatus').className = 'loop-status adjusting';
+      $('loopTitle').textContent = '自动调整中';
+      $('loopDetail').textContent = '延长搅拌30秒 + 补水2L...';
+
+      // 模拟调整过程
+      setTimeout(() => {
+        addLog('延长搅拌完成');
+        addLog('补水量: 2L');
+      }, 1000);
+
+      setTimeout(() => {
+        addLog('重新采样分析...');
+        $('agentState').textContent = '重新研判中...';
+      }, 2000);
+
+      setTimeout(() => {
+        // 调整后的新数据
+        state.stage = 3;  // 设置为研判完成状态，允许确认放行
+        state.prediction = { slump: 178, spread: 445, slumpTime: 5.8, pasteRich: 17.2 };
+
+        $('predictSlump').textContent = '178';
+        $('predictSpread').textContent = '445';
+        $('predictSlumpTime').textContent = '5.8';
+        $('predictPasteRich').textContent = '17.2';
+
+        $('judgeResult').textContent = '合格';
+        $('judgeResult').className = 'decision-result ok';
+        $('judgeReason').textContent = '调整后: 坍落度178mm、扩展度445mm、倒坍时间5.8s';
+        $('strategy').textContent = '建议放行';
+        $('strategy').className = 'decision-result ok';
+        $('strategyDetail').textContent = '终止搅拌 → 执行出料 → 全参数归档';
+        $('rootCause').textContent = '经自动调整后，四项指标均已达到目标范围。';
+
+        $('decisionBox').className = 'decision-box judged';
+        $('glmStatus').textContent = '已判定';
+        $('agentState').textContent = '研判完成';
+
+        // 更新台账
+        $('lSlump').textContent = '178mm (调整后合格)';
+        $('lSpread').textContent = '445mm (调整后合格)';
+        $('lSlumpTime').textContent = '5.8s (合格)';
+        $('lPasteRich').textContent = '17.2% (合格)';
+        $('lAgentJudge').textContent = '合格(调整后)';
+        $('lStrategy').textContent = '建议放行';
+
+        addLog('重新研判完成: 合格', 'success');
+        updateSteps();
+        executeClosedLoop();
+      }, 3000);
+    }
+
+    function cancelAdjust() {
+      $('failModal').classList.remove('show');
+      addLog('人工选择暂停流程', 'error');
+
+      $('loopStatus').className = 'loop-status failed';
+      $('loopTitle').textContent = '流程已暂停';
+      $('loopDetail').textContent = '等待人工处理';
+
+      $('lHumanConfirm').textContent = '已暂停';
+      $('lStrategy').textContent = '待人工处理';
+    }
+
+    function updateLedger() {
+      const now = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+
+      $('lTime').textContent = now;
+
+      if (state.caseType === 0) {
+        // 成功案例
+        $('lUniformity').textContent = '88% (合格)';
+        $('lSegregation').textContent = '未检出 (合格)';
+        $('lLump').textContent = '未检出 (合格)';
+        $('lFlow').textContent = '82% (良好)';
+        $('lStableAmp').textContent = '62A';
+        $('lStableTime').textContent = '88s';
+        $('lWave').textContent = '8A';
+        $('lWaterCement').textContent = '0.42';
+        $('lPasteAgg').textContent = '0.38';
+        $('lRatioDev').textContent = '0% (准确)';
+        $('lSlump').textContent = '184mm (合格)';
+        $('lSpread').textContent = '468mm (合格)';
+        $('lSlumpTime').textContent = '5.2s (合格)';
+        $('lPasteRich').textContent = '18.5% (合格)';
+        $('lAgentJudge').textContent = '合格';
+        $('lStrategy').textContent = '建议放行';
+      } else {
+        // 失败案例
+        $('lUniformity').textContent = '62% (异常)';
+        $('lSegregation').textContent = '轻微离析 (异常)';
+        $('lLump').textContent = '未检出 (合格)';
+        $('lFlow').textContent = '58% (较差)';
+        $('lStableAmp').textContent = '58A';
+        $('lStableTime').textContent = '95s';
+        $('lWave').textContent = '15A';
+        $('lWaterCement').textContent = '0.42';
+        $('lPasteAgg').textContent = '0.38';
+        $('lRatioDev').textContent = '0% (准确)';
+        $('lSlump').textContent = '128mm (偏低)';
+        $('lSpread').textContent = '352mm (偏低)';
+        $('lSlumpTime').textContent = '8.5s (偏长)';
+        $('lPasteRich').textContent = '12.3% (偏低)';
+        $('lAgentJudge').textContent = '不合格';
+        $('lStrategy').textContent = '需调整';
+      }
+
+      $('lHumanConfirm').textContent = '待确认';
+      $('lReleaseTime').textContent = '--';
+
+      addLog('质量台账数据已写入');
+    }
+
+    function executeClosedLoop() {
+      $('loopStatus').className = 'loop-status executing';
+      $('loopTitle').textContent = '闭环执行中';
+      $('loopDetail').textContent = '正在执行自动放行流程...';
+
+      addLog('开始执行闭环流程...', 'warn');
+
+      const steps = [
+        { delay: 300, text: '发送终止搅拌指令...', type: '' },
+        { delay: 600, text: '搅拌已停止', type: 'success' },
+        { delay: 900, text: '发送出料指令...', type: '' },
+        { delay: 1200, text: '出料闸门已开启', type: 'success' },
+        { delay: 1500, text: '参数归档中...', type: '' },
+        { delay: 1800, text: '质量台账已归档', type: 'success' },
+        { delay: 2100, text: '闭环执行完成，等待人工确认放行', type: 'success' }
+      ];
+
+      steps.forEach(step => {
+        setTimeout(() => addLog(step.text, step.type), step.delay);
+      });
+
+      setTimeout(() => {
+        $('loopStatus').className = 'loop-status success';
+        $('loopTitle').textContent = '闭环执行完成';
+        $('loopDetail').textContent = '已完成: 终止搅拌 → 出料 → 归档';
+      }, 2100);
+    }
+
+    function approve() {
+      if (state.stage < 3) return;
+
+      addLog('质检员确认放行', 'success');
+
+      // 更新历史数据 - 检查是否是调整后的批次
+      const wasAdjusted = state.caseType === 1 && state.prediction.slump === 178;
+      updateHistory(wasAdjusted);
+
+      state.stage = 4;
+      state.monitoring = false;  // 重置监测状态，允许下一轮启动
+      updateSteps();
+      $('statusText').textContent = '已放行';
+      $('lHumanConfirm').textContent = '已确认';
+      $('lReleaseTime').textContent = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+
+      $('loopStatus').className = 'loop-status success';
+      $('loopTitle').textContent = '放行确认完成';
+      $('loopDetail').textContent = '质检员已确认，出料完成';
+
+      addLog('🎉 本批次放行完成，流程结束', 'success');
+
+      // 3秒后自动开始下一轮
+      const nextCase = state.totalRuns % 2 === 0 ? '合格' : '不合格';
+      addLog(`3秒后自动开始下一轮监测（${nextCase}案例）...`, 'warn');
+
+      setTimeout(() => {
+        addLog('自动启动新一轮监测...', 'success');
+        startMonitor();
+      }, 3000);
+    }
+
+    window.addEventListener('resize', drawChart);
+    init();
+  </script>
+</body>
+</html>

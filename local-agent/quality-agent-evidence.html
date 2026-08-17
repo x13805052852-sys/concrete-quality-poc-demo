@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>混凝土生产质量智能体 - 本地验证链路</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b1117;
+      --panel: #111a23;
+      --panel-2: #16222f;
+      --line: #2b3d4f;
+      --text: #e8eef5;
+      --muted: #9fb0c1;
+      --green: #37d399;
+      --yellow: #f6c768;
+      --red: #ff6b6b;
+      --blue: #62a8ff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    main {
+      width: min(1180px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 28px 0 36px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: flex-start;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 28px;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      line-height: 1.65;
+      max-width: 760px;
+      font-size: 14px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.05fr 1.2fr;
+      gap: 16px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      min-width: 0;
+    }
+
+    .panel h2 {
+      margin: 0 0 14px;
+      font-size: 16px;
+      letter-spacing: 0;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    button {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: #172637;
+      color: var(--text);
+      border-radius: 6px;
+      min-height: 38px;
+      padding: 0 14px;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    button.active {
+      border-color: var(--blue);
+      color: white;
+      box-shadow: inset 0 0 0 1px rgba(98, 168, 255, 0.5);
+    }
+
+    .sample-card {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .metric {
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 10px;
+      min-height: 76px;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 7px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 19px;
+      letter-spacing: 0;
+    }
+
+    .workflow {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .node {
+      min-height: 94px;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      border-radius: 6px;
+      padding: 10px;
+      position: relative;
+    }
+
+    .node::after {
+      content: "→";
+      position: absolute;
+      right: -13px;
+      top: 34px;
+      color: var(--muted);
+    }
+
+    .node:last-child::after { content: ""; }
+
+    .node-title {
+      font-size: 13px;
+      color: var(--blue);
+      margin-bottom: 8px;
+    }
+
+    .node-text {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .result {
+      display: grid;
+      grid-template-columns: 0.72fr 1fr;
+      gap: 14px;
+    }
+
+    .judgement {
+      border-radius: 8px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+    }
+
+    .judgement.good { border-color: rgba(55, 211, 153, 0.5); }
+    .judgement.warn { border-color: rgba(255, 107, 107, 0.6); }
+
+    .label {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .big {
+      font-size: 26px;
+      margin-bottom: 10px;
+    }
+
+    .good .big { color: var(--green); }
+    .warn .big { color: var(--red); }
+
+    ul {
+      margin: 8px 0 0;
+      padding-left: 18px;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 13px;
+    }
+
+    .report {
+      white-space: pre-wrap;
+      background: #071018;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 14px;
+      color: #cfe1f1;
+      line-height: 1.6;
+      min-height: 260px;
+      overflow: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+    }
+
+    .boundary {
+      margin-top: 16px;
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: 13px;
+      border-top: 1px solid var(--line);
+      padding-top: 12px;
+    }
+
+    @media (max-width: 920px) {
+      header,
+      .grid,
+      .result {
+        grid-template-columns: 1fr;
+        display: block;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .workflow {
+        grid-template-columns: 1fr;
+      }
+
+      .node::after {
+        content: "↓";
+        right: 50%;
+        top: auto;
+        bottom: -18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>混凝土生产质量智能体</h1>
+        <div class="subtitle">
+          本地验证链路：将批次信息、视觉特征、电流时序、配比参数和现场上下文转成结构化输入，完成规则判断、GLM质量研判、分支处理和台账归档。当前用于证明方案链路，不代表已接入真实产线。
+        </div>
+      </div>
+      <div class="badge">Workflow + GLM + HITL</div>
+    </header>
+
+    <section class="grid">
+      <div class="panel">
+        <h2>输入样例</h2>
+        <div class="controls">
+          <button id="qualifiedBtn" class="active" type="button">合格批次</button>
+          <button id="abnormalBtn" type="button">异常批次</button>
+        </div>
+        <div class="sample-card" id="sampleCard"></div>
+      </div>
+
+      <div class="panel">
+        <h2>工作流节点</h2>
+        <div class="workflow" id="workflow"></div>
+        <div class="result">
+          <div class="judgement" id="judgement"></div>
+          <div>
+            <div class="label">结构化报告</div>
+            <div class="report" id="report"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="boundary">
+      证据边界：当前页面和本地脚本用于展示“可运行的判断链路”，未接入真实PLC、ERP、CQMS或生产视频流。真实部署时，出料、补水、暂停等高风险动作必须保留人工确认或授权执行。
+    </div>
+  </main>
+
+  <script>
+    const TARGETS = {
+      slump: { min: 160, max: 210, unit: "mm", label: "坍落度" },
+      spread: { min: 400, max: 550, unit: "mm", label: "扩展度" },
+      slumpTime: { min: 3, max: 8, unit: "s", label: "倒坍时间" },
+      pasteRichness: { min: 15, max: null, unit: "%", label: "浆体富裕度" }
+    };
+
+    const samples = {
+      qualified: {
+        batchId: "LS-C30-072-A",
+        plant: "龙山搅拌站",
+        line: "1号生产线",
+        concreteGrade: "C30泵送",
+        visual: { uniformityScore: 86, segregation: "无", dryWetState: "适中", flowability: "正常", wallAdhesion: "轻微" },
+        current: { peakA: 42.8, stableAfterSec: 94, trend: "90s后趋于稳定" },
+        mix: { waterCementRatio: 0.42, pasteAggregateRatio: 0.33, executionDeviation: "无明显偏差" },
+        context: { temperatureC: 24, transportDistanceKm: 12, equipmentEfficiency: "正常" }
+      },
+      abnormal: {
+        batchId: "LS-C30-073-B",
+        plant: "龙山搅拌站",
+        line: "1号生产线",
+        concreteGrade: "C30泵送",
+        visual: { uniformityScore: 62, segregation: "明显", dryWetState: "偏干", flowability: "弱", wallAdhesion: "明显" },
+        current: { peakA: 49.4, stableAfterSec: 142, trend: "持续高位后缓慢回落" },
+        mix: { waterCementRatio: 0.405, pasteAggregateRatio: 0.31, executionDeviation: "疑似含水率补偿不足" },
+        context: { temperatureC: 9, transportDistanceKm: 28, equipmentEfficiency: "需复核" }
+      }
+    };
+
+    const round = (value, digits = 1) => Number.parseFloat(value.toFixed(digits));
+
+    function derivePredictions(batch) {
+      const currentDelta = batch.current.peakA - 42;
+      const visualDryPenalty = Math.max(0, 75 - batch.visual.uniformityScore) * 0.5;
+      const segregationPenalty = batch.visual.segregation === "明显" ? 12 : batch.visual.segregation === "轻微" ? 6 : 0;
+      const temperaturePenalty = batch.context.temperatureC <= 10 ? 5 : 0;
+      const distancePenalty = Math.max(0, batch.context.transportDistanceKm - 20) * 0.3;
+      const waterCementAdjustment = (batch.mix.waterCementRatio - 0.42) * 250;
+      return {
+        slump: round(188 - currentDelta * 4 - visualDryPenalty - segregationPenalty - temperaturePenalty - distancePenalty + waterCementAdjustment, 0),
+        spread: round(470 - currentDelta * 11.5 - visualDryPenalty * 1.4 - segregationPenalty * 1.3 - distancePenalty * 1.2 + waterCementAdjustment * 1.4, 0),
+        slumpTime: round(5.2 + currentDelta * 0.18 + (batch.visual.dryWetState === "偏干" ? 1.2 : 0) + (batch.context.temperatureC <= 10 ? 0.5 : 0), 1),
+        pasteRichness: round(18.2 - currentDelta * 0.4 - (batch.visual.wallAdhesion === "明显" ? 1.8 : 0) - (batch.visual.flowability === "弱" ? 1.4 : 0), 1),
+        currentDeltaA: round(currentDelta, 1)
+      };
+    }
+
+    function evaluate(metric, value) {
+      const target = TARGETS[metric];
+      if (value < target.min) return `${target.label}${value}${target.unit}低于目标下限${target.min}${target.unit}`;
+      if (Number.isFinite(target.max) && value > target.max) return `${target.label}${value}${target.unit}高于目标上限${target.max}${target.unit}`;
+      return "";
+    }
+
+    function runAgent(batch) {
+      const predictions = derivePredictions(batch);
+      const risks = [
+        evaluate("slump", predictions.slump),
+        evaluate("spread", predictions.spread),
+        evaluate("slumpTime", predictions.slumpTime),
+        evaluate("pasteRichness", predictions.pasteRichness),
+        batch.visual.uniformityScore < 70 ? `浆体均匀度${batch.visual.uniformityScore}%偏低` : "",
+        batch.visual.segregation === "明显" ? "视觉识别存在明显离析" : "",
+        batch.visual.dryWetState === "偏干" ? "视觉识别浆体偏干" : "",
+        predictions.currentDeltaA >= 5 ? `峰值电流较基准升高${predictions.currentDeltaA}A` : ""
+      ].filter(Boolean);
+
+      const qualified = risks.length === 0;
+      const judgement = qualified ? "合格" : "异常待确认";
+      const riskLevel = qualified ? "低" : risks.length >= 4 ? "高" : "中";
+      const action = qualified
+        ? "质检员复核后建议放行，并写入质量台账。"
+        : "进入人工确认：建议延长搅拌30秒，必要时按现场授权补水2L并重新研判；若复核仍不合格，则暂停出料。";
+
+      return { predictions, risks, judgement, riskLevel, action, branch: qualified ? "合格分支" : "异常分支" };
+    }
+
+    function render(caseName) {
+      const batch = samples[caseName];
+      const result = runAgent(batch);
+      document.querySelectorAll("button").forEach((button) => button.classList.remove("active"));
+      document.getElementById(caseName === "qualified" ? "qualifiedBtn" : "abnormalBtn").classList.add("active");
+
+      document.getElementById("sampleCard").innerHTML = [
+        ["车次", batch.batchId],
+        ["视觉", `均匀度${batch.visual.uniformityScore}% / ${batch.visual.dryWetState} / 离析${batch.visual.segregation}`],
+        ["电流", `峰值${batch.current.peakA}A / 达稳${batch.current.stableAfterSec}s`],
+        ["配比", `水灰比${batch.mix.waterCementRatio} / ${batch.mix.executionDeviation}`],
+        ["上下文", `${batch.context.temperatureC}℃ / 运距${batch.context.transportDistanceKm}km`],
+        ["预测", `坍落度${result.predictions.slump}mm / 扩展度${result.predictions.spread}mm`]
+      ].map(([label, value]) => `<div class="metric"><span>${label}</span><strong>${value}</strong></div>`).join("");
+
+      document.getElementById("workflow").innerHTML = [
+        ["输入节点", "6类数据源结构化"],
+        ["规则判断", `风险等级：${result.riskLevel}`],
+        ["GLM研判", result.judgement],
+        ["HITL分支", result.branch],
+        ["台账归档", "生成报告样例"]
+      ].map(([title, text]) => `<div class="node"><div class="node-title">${title}</div><div class="node-text">${text}</div></div>`).join("");
+
+      const judgementEl = document.getElementById("judgement");
+      judgementEl.className = `judgement ${result.judgement === "合格" ? "good" : "warn"}`;
+      judgementEl.innerHTML = `
+        <div class="label">最终判定</div>
+        <div class="big">${result.judgement}</div>
+        <div class="label">风险等级：${result.riskLevel}</div>
+        <ul>${(result.risks.length ? result.risks : ["四项预测指标处于目标范围", "视觉、电流与配比无明显异常"]).map((item) => `<li>${item}</li>`).join("")}</ul>
+      `;
+
+      document.getElementById("report").textContent = JSON.stringify({
+        batchId: batch.batchId,
+        concreteGrade: batch.concreteGrade,
+        predictions: result.predictions,
+        qualityJudgement: result.judgement,
+        riskLevel: result.riskLevel,
+        branch: result.branch,
+        actionSuggestion: result.action,
+        humanConfirmRequired: true
+      }, null, 2);
+    }
+
+    document.getElementById("qualifiedBtn").addEventListener("click", () => render("qualified"));
+    document.getElementById("abnormalBtn").addEventListener("click", () => render("abnormal"));
+    render("qualified");
+  </script>
+</body>
+</html>

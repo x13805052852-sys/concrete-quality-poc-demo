@@ -1,0 +1,31 @@
+{
+  "batchId": "LS-C30-072-A",
+  "plant": "龙山搅拌站",
+  "line": "1号生产线",
+  "concreteGrade": "C30泵送",
+  "productionTime": "2026-06-10 09:18:00",
+  "visual": {
+    "uniformityScore": 86,
+    "segregation": "无",
+    "lumps": "无明显结团",
+    "dryWetState": "适中",
+    "flowability": "正常",
+    "wallAdhesion": "轻微"
+  },
+  "current": {
+    "peakA": 42.8,
+    "stableAfterSec": 94,
+    "trend": "90s后趋于稳定",
+    "fluctuation": "低"
+  },
+  "mix": {
+    "waterCementRatio": 0.42,
+    "pasteAggregateRatio": 0.33,
+    "executionDeviation": "无明显偏差"
+  },
+  "context": {
+    "temperatureC": 24,
+    "transportDistanceKm": 12,
+    "equipmentEfficiency": "正常"
+  }
+}

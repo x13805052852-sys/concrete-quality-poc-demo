@@ -1,0 +1,45 @@
+{
+  "_meta": {
+    "description": "坍落度/扩展度预测模型参数。POC 阶段为经验系数，生产环境由 calibrate.py 标定。",
+    "version": "1.0.0",
+    "calibratedAt": null,
+    "calibrationMethod": null,
+    "note": "所有系数应通过 calibrate.py 用历史(电流, 坍落度)配对数据最小二乘拟合后覆盖本文件"
+  },
+  "currentBaselineA": {
+    "value": 42,
+    "unit": "A",
+    "description": "搅拌机空载/轻载基准电流。currentDelta = peakA - baseline",
+    "calibrationMethod": "取近30天空载搅拌机电流中位数",
+    "provenance": "经验值，需按设备型号标定"
+  },
+  "slump": {
+    "base": { "value": 188, "unit": "mm", "description": "基准坍落度（currentDelta=0, 视觉/温度/运距均无惩罚时）", "calibrationMethod": "截距项，线性回归拟合" },
+    "currentDeltaCoef": { "value": 4, "description": "电流每偏高1A，坍落度下降4mm（电流↑→浆体变稠→坍落度↓）", "calibrationMethod": "斜率项，回归拟合" },
+    "visualDryPenaltyCoef": { "value": 0.5, "description": "均匀度低于75时的惩罚系数：(75-uniformity)*0.5", "calibrationMethod": "回归拟合" },
+    "segregationPenalty": { "value": { "明显": 12, "轻微": 6, "无": 0 }, "unit": "mm", "description": "离析导致的坍落度损失", "calibrationMethod": "分类变量回归" },
+    "temperaturePenalty": { "value": 5, "unit": "mm", "description": "低温(≤10℃)导致的坍落度损失", "calibrationMethod": "分类变量回归" },
+    "distancePenaltyCoef": { "value": 0.3, "description": "运距每超20km，坍落度损失0.3mm/km（运输过程坍落度损失）", "calibrationMethod": "回归拟合" },
+    "waterCementAdjustmentCoef": { "value": 250, "description": "水灰比每偏离0.01，坍落度变化2.5mm（水灰比↑→坍落度↑）", "calibrationMethod": "回归拟合" }
+  },
+  "spread": {
+    "base": { "value": 470, "unit": "mm", "description": "基准扩展度", "calibrationMethod": "截距项" },
+    "currentDeltaCoef": { "value": 11.5, "description": "电流每偏高1A，扩展度下降11.5mm", "calibrationMethod": "回归拟合" },
+    "visualDryPenaltyCoef": { "value": 1.4, "description": "均匀度惩罚放大系数（扩展度比坍落度更敏感）", "calibrationMethod": "回归拟合" },
+    "segregationPenaltyCoef": { "value": 1.3, "description": "离析惩罚放大系数", "calibrationMethod": "回归拟合" },
+    "distancePenaltyCoef": { "value": 1.2, "description": "运距惩罚放大系数", "calibrationMethod": "回归拟合" },
+    "waterCementAdjustmentCoef": { "value": 1.4, "description": "水灰比调整放大系数", "calibrationMethod": "回归拟合" }
+  },
+  "slumpTime": {
+    "base": { "value": 5.2, "unit": "s", "description": "基准倒坍时间", "calibrationMethod": "截距项" },
+    "currentDeltaCoef": { "value": 0.18, "description": "电流每偏高1A，倒坍时间增加0.18s（浆体变稠→流动变慢）", "calibrationMethod": "回归拟合" },
+    "dryWetPenalty": { "value": 1.2, "unit": "s", "description": "偏干状态额外倒坍时间", "calibrationMethod": "分类变量回归" },
+    "lowTempPenalty": { "value": 0.5, "unit": "s", "description": "低温(≤10℃)额外倒坍时间", "calibrationMethod": "分类变量回归" }
+  },
+  "pasteRichness": {
+    "base": { "value": 18.2, "unit": "%", "description": "基准浆体富裕度", "calibrationMethod": "截距项" },
+    "currentDeltaCoef": { "value": 0.4, "description": "电流每偏高1A，浆体富裕度下降0.4%", "calibrationMethod": "回归拟合" },
+    "wallAdhesionPenalty": { "value": 1.8, "description": "挂壁明显时浆体富裕度损失", "calibrationMethod": "分类变量回归" },
+    "flowabilityPenalty": { "value": 1.4, "description": "流动性弱时浆体富裕度损失", "calibrationMethod": "分类变量回归" }
+  }
+}

@@ -1,0 +1,21 @@
+# Local secrets and environment overrides
+.env
+.env.*
+!.env.example
+
+# OS and editor metadata
+.DS_Store
+**/.DS_Store
+.vscode/
+.idea/
+
+# Dependencies and caches
+node_modules/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Runtime output
+*.log
+local-agent/eval-result-ci.json

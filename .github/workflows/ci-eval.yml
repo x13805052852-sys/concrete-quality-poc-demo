@@ -1,0 +1,78 @@
+name: CI - 质量智能体评估与测试
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "local-agent/**"
+      - ".github/workflows/ci-eval.yml"
+  pull_request:
+    branches: [main, master]
+    paths:
+      - "local-agent/**"
+
+jobs:
+  test-and-evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 安装 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 生成样例数据库
+        working-directory: local-agent
+        run: python3 db/seed_demo_db.py
+
+      - name: 校验 model-params.json 结构
+        working-directory: local-agent
+        run: node -e "const m=require('./model-params.json'); if(!m._meta||!m.slump) throw new Error('model-params 结构不合法')"
+
+      - name: 单元测试 + 集成测试
+        working-directory: local-agent
+        env:
+          # CI 不配 GLM_API_KEY，全部走规则降级，保证可重复
+          GLM_API_KEY: ""
+        run: node --test test.mjs
+
+      - name: 混沌测试（故障降级）
+        working-directory: local-agent
+        env:
+          GLM_API_KEY: ""
+        run: node chaos.mjs
+
+      - name: 离线评估（规则引擎基线）
+        working-directory: local-agent
+        env:
+          GLM_API_KEY: ""
+        run: node evaluate.mjs --json eval-result-ci.json
+
+      - name: 评估指标守门
+        working-directory: local-agent
+        run: |
+          node -e "
+          const r = require('./eval-result-ci.json');
+          const failures = [];
+          if (r.binary.f1 < 0.95) failures.push('合格/异常 F1=' + r.binary.f1.toFixed(4) + ' < 0.95');
+          if (r.slumpRegression.r2 < 0.80) failures.push('坍落度 R²=' + r.slumpRegression.r2.toFixed(4) + ' < 0.80');
+          if (r.slumpRegression.mae > 10) failures.push('坍落度 MAE=' + r.slumpRegression.mae.toFixed(2) + ' > 10mm');
+          if (failures.length > 0) { console.error('评估指标未达标：'); failures.forEach(f=>console.error('  - ' + f)); process.exit(1); }
+          console.log('评估指标达标：binary F1=' + r.binary.f1.toFixed(4) + ', slump R²=' + r.slumpRegression.r2.toFixed(4) + ', MAE=' + r.slumpRegression.mae.toFixed(2) + 'mm');
+          "
+
+      - name: 上传评估结果产物
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-result
+          path: local-agent/eval-result-ci.json

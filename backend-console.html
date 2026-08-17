@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>质量Agent后台运行日志</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0d1117;
+      --panel: #161b22;
+      --card: #21262d;
+      --border: #30363d;
+      --text: #c9d1d9;
+      --muted: #8b949e;
+      --green: #3fb950;
+      --blue: #58a6ff;
+      --yellow: #d29922;
+      --red: #f85149;
+      --purple: #bc8cff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 13px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    header {
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 18px;
+      border-bottom: 1px solid var(--border);
+      background: #010409;
+    }
+    h1 { margin: 0; font-size: 16px; }
+    main {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(280px, 0.6fr);
+      gap: 12px;
+      padding: 12px;
+      height: calc(100vh - 52px);
+    }
+    section {
+      min-height: 0;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 9px 12px;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .section-title .sub { color: var(--muted); font-weight: 400; font-size: 11px; }
+    .body { padding: 10px; overflow: auto; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 12px; }
+    .log-row {
+      display: grid;
+      grid-template-columns: 72px 88px minmax(0, 1fr);
+      gap: 8px;
+      padding: 6px 8px;
+      border-bottom: 1px solid rgba(48, 54, 61, 0.5);
+    }
+    .log-row:hover { background: rgba(88, 166, 255, 0.06); }
+    .log-time { color: var(--muted); }
+    .log-stage { color: var(--blue); }
+    .log-message { word-break: break-word; }
+    .log-row.new { background: rgba(88, 166, 255, 0.12); animation: pulse 1.2s ease-out; }
+    @keyframes pulse { from { background: rgba(88, 166, 255, 0.24); } to { background: rgba(88, 166, 255, 0.12); } }
+
+    table { width: 100%; border-collapse: collapse; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 12px; }
+    th, td { text-align: left; padding: 7px 9px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; background: rgba(33, 38, 45, 0.7); position: sticky; top: 0; }
+
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 9px; border: 1px solid var(--border); border-radius: 999px;
+      color: var(--green); font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 12px;
+    }
+    .muted { color: var(--muted); }
+    a { color: var(--blue); text-decoration: none; }
+    .toolbar { display: flex; align-items: center; gap: 8px; }
+    button {
+      border: 1px solid var(--border); background: var(--card); color: var(--text);
+      border-radius: 6px; padding: 6px 10px; cursor: pointer; font: inherit;
+    }
+    button:hover { border-color: var(--blue); color: var(--blue); }
+    .status-line {
+      padding: 7px 12px; color: var(--muted); border-bottom: 1px solid var(--border);
+      background: rgba(13, 17, 23, 0.55); font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 11px;
+    }
+
+    /* 适配层卡片 */
+    .adapter-card {
+      padding: 8px 10px; border-bottom: 1px solid var(--border);
+    }
+    .adapter-card .name { color: var(--purple); font-weight: 600; }
+    .adapter-card .backend { color: var(--green); font-size: 11px; }
+    .adapter-card .desc { color: var(--muted); font-size: 11px; margin-top: 3px; }
+
+    /* 工具调用记录 */
+    .tool-call {
+      padding: 7px 10px; border-bottom: 1px solid var(--border); border-left: 2px solid var(--purple);
+      margin: 4px 0;
+    }
+    .tool-call .tc-head { display: flex; justify-content: space-between; }
+    .tool-call .tc-name { color: var(--purple); font-weight: 600; }
+    .tool-call .tc-meta { color: var(--muted); font-size: 11px; }
+    .tool-call .tc-result { color: var(--text); font-size: 11px; margin-top: 4px; word-break: break-word; }
+    .tool-call.failed { border-left-color: var(--red); }
+    .tool-call.failed .tc-name { color: var(--red); }
+
+    .badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; }
+    .badge-ok { background: rgba(63, 185, 80, 0.15); color: var(--green); }
+    .badge-fail { background: rgba(248, 81, 73, 0.15); color: var(--red); }
+    .badge-glm { background: rgba(188, 140, 255, 0.15); color: var(--purple); }
+    .badge-rule { background: rgba(210, 153, 34, 0.15); color: var(--yellow); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>质量Agent后台运行日志</h1>
+    <div class="toolbar">
+      <button onclick="triggerCase('qualified')">触发合格批次</button>
+      <button onclick="triggerCase('abnormal')">触发异常批次</button>
+      <button onclick="loadEvalResult()" style="background:#1a4d2e;">加载评估结果</button>
+      <a href="/quality-agent-cockpit.html" target="_blank">打开驾驶舱</a>
+      <div class="pill" id="health">API 检测中</div>
+    </div>
+  </header>
+  <main>
+    <!-- 左栏：实时事件 + Agent运行日志 -->
+    <section>
+      <div class="section-title">
+        <span>实时后端事件</span>
+        <span class="sub" id="eventStatus">监听中 --</span>
+      </div>
+      <div class="body" id="events" style="max-height: 40%; border-bottom: 1px solid var(--border);"></div>
+      <div class="section-title" style="border-top: 0;">
+        <span>Agent 运行日志 <span class="sub">agent_run_logs 表</span></span>
+        <span class="sub">
+          <input id="logBatchId" placeholder="batchId" style="width:120px;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:4px;padding:3px 6px;font-size:11px;" value="">
+          <button onclick="refreshRunLogs()" style="padding:3px 8px;">查询</button>
+        </span>
+      </div>
+      <div class="body" id="runLogs" style="flex: 1;"></div>
+    </section>
+
+    <!-- 中栏：Agent ReAct 推理详情 -->
+    <section>
+      <div class="section-title">
+        <span>Agent ReAct 推理详情</span>
+        <span class="sub" id="reactStatus">未触发</span>
+      </div>
+      <div class="body" id="reactDetail" style="flex: 1;">
+        <div class="muted" style="padding: 20px; text-align: center;">
+          点击上方"触发合格/异常批次"后，这里展示 GLM 的工具调用过程、推理轮次和最终判定。
+        </div>
+      </div>
+    </section>
+
+    <!-- 右栏：适配层状态 + 模型信息 -->
+    <section>
+      <div class="section-title">
+        <span>数据接入适配层</span>
+        <a href="/api/health" target="_blank">JSON</a>
+      </div>
+      <div class="body" id="adapters" style="max-height: 50%; border-bottom: 1px solid var(--border);"></div>
+      <div class="section-title" style="border-top: 0;">
+        <span>Agent 工具 & 模型</span>
+      </div>
+      <div class="body" id="toolsAndModel" style="flex: 1;"></div>
+    </section>
+  </main>
+
+  <!-- 全宽：离线评估结果（混淆矩阵 + macro-F1 + 回归指标） -->
+  <section style="margin-top: 8px; max-height: 45vh;">
+    <div class="section-title">
+      <span>离线评估结果 <span class="sub">eval-result.json（40 批次，规则引擎基线）</span></span>
+      <span class="sub" id="evalStatus">未加载</span>
+    </div>
+    <div class="body" id="evalPanel" style="display: flex; gap: 12px; overflow: auto;">
+      <div class="muted" style="padding: 20px; text-align: center; flex: 1;">
+        点击工具栏"加载评估结果"读取 local-agent/eval-result.json，展示合格/异常混淆矩阵、6 类根因 macro-F1、坍落度 MAE/RMSE/R²。<br>
+        生成命令：<code style="color:#8ab4f8;">cd local-agent && node evaluate.mjs --json eval-result.json</code>
+      </div>
+    </div>
+  </section>
+  <script>
+    const $ = id => document.getElementById(id);
+    let lastEventId = 0;
+    let healthData = null;
+
+    async function refreshHealth() {
+      try {
+        const res = await fetch('/api/health', { cache: 'no-store' });
+        const data = await res.json();
+        healthData = data;
+        const dbOk = data.database?.exists ? '已加载' : '未加载';
+        const adapterCount = data.adapters?.length || 0;
+        const toolCount = data.agentTools?.length || 0;
+        const modelVer = data.model?.version || '?';
+        $('health').textContent = `API 已连接 · DB ${dbOk} · ${adapterCount}路适配 · ${toolCount}工具 · 模型v${modelVer}`;
+        renderAdapters(data);
+        renderToolsAndModel(data);
+      } catch {
+        $('health').textContent = 'API 未连接';
+      }
+    }
+
+    function renderAdapters(data) {
+      const adapters = data.adapters || [];
+      $('adapters').innerHTML = adapters.map(a => `
+        <div class="adapter-card">
+          <div><span class="name">${a.name}</span> <span class="backend">[${a.backend}]</span></div>
+          <div class="desc">${a.description}</div>
+          <div class="muted" style="font-size:10px;margin-top:2px;">支持: ${(a.supportedBackends||[]).join(' / ')}</div>
+        </div>
+      `).join('') || '<div class="muted" style="padding:12px;">无适配器数据</div>';
+    }
+
+    function renderToolsAndModel(data) {
+      const tools = data.agentTools || [];
+      const model = data.model || {};
+      const eps = data.endpoints || [];
+      const calibrated = model.calibratedAt ? `<span class="badge badge-ok">已标定 ${model.calibratedAt}</span>` : `<span class="badge badge-fail">未标定</span>`;
+      $('toolsAndModel').innerHTML = `
+        <div style="padding:8px 10px;border-bottom:1px solid var(--border);">
+          <div style="color:var(--muted);font-size:11px;margin-bottom:4px;">Agent 工具 (${tools.length})</div>
+          ${tools.map(t => `<div style="padding:3px 0;"><span class="badge badge-glm">${t.name}</span><div class="muted" style="font-size:10px;margin-top:2px;">${(t.description||'').slice(0,60)}</div></div>`).join('')}
+        </div>
+        <div style="padding:8px 10px;border-bottom:1px solid var(--border);">
+          <div style="color:var(--muted);font-size:11px;margin-bottom:4px;">预测模型</div>
+          <div>版本 <span style="color:var(--blue);">v${model.version || '?'}</span> ${calibrated}</div>
+          ${model.calibrationMethod ? `<div class="muted" style="font-size:10px;margin-top:2px;">${model.calibrationMethod}</div>` : ''}
+          <div class="muted" style="font-size:10px;margin-top:2px;">标定: <code>python3 calibrate.py --csv data.csv</code></div>
+        </div>
+        <div style="padding:8px 10px;">
+          <div style="color:var(--muted);font-size:11px;margin-bottom:4px;">API 端点 (${eps.length})</div>
+          ${eps.map(e => `<div class="muted" style="font-size:10px;">${e}</div>`).join('')}
+        </div>
+      `;
+    }
+
+    async function refreshEvents() {
+      try {
+        const res = await fetch('/api/events-log', { cache: 'no-store' });
+        const data = await res.json();
+        const newestId = data.events.at(-1)?.id || 0;
+        const hasNew = newestId > lastEventId;
+        $('eventStatus').textContent = `${new Date().toLocaleTimeString('zh-CN', { hour12: false })} · events=${data.events.length} · latest=${newestId || '--'}`;
+        $('events').innerHTML = data.events.slice().reverse().slice(0, 30).map(item => `
+          <div class="log-row ${hasNew && item.id > lastEventId ? 'new' : ''}">
+            <div class="log-time">${new Date(item.at).toLocaleTimeString('zh-CN', { hour12: false })}</div>
+            <div class="log-stage">${item.stage}</div>
+            <div class="log-message">${item.message}</div>
+          </div>
+        `).join('');
+        lastEventId = newestId;
+      } catch {}
+    }
+
+    async function refreshRunLogs() {
+      const batchId = $('logBatchId').value.trim();
+      if (!batchId) {
+        $('runLogs').innerHTML = '<div class="muted" style="padding:12px;">输入 batchId 后查询（如 JB-C35-026-C）</div>';
+        return;
+      }
+      try {
+        const res = await fetch(`/api/agent-run-logs?batchId=${encodeURIComponent(batchId)}&limit=100`, { cache: 'no-store' });
+        const data = await res.json();
+        const logs = data.logs || [];
+        $('runLogs').innerHTML = logs.length === 0
+          ? `<div class="muted" style="padding:12px;">批次 ${batchId} 无运行日志</div>`
+          : logs.map(log => `
+            <div class="log-row">
+              <div class="log-time">${(log.run_at || '').slice(11, 19)}</div>
+              <div class="log-stage">${log.node || ''}</div>
+              <div class="log-message">${log.message || ''}</div>
+            </div>
+          `).join('');
+      } catch (e) {
+        $('runLogs').innerHTML = `<div class="muted" style="padding:12px;">查询失败: ${e.message}</div>`;
+      }
+    }
+
+    async function refreshRules() {
+      const res = await fetch('/api/db/rules', { cache: 'no-store' });
+      const data = await res.json();
+      // 规则表移到右栏底部（如有空间）或省略——这里保留在适配层下方
+    }
+
+    function renderReactDetail(result) {
+      const meta = result.decisionMeta || {};
+      const decision = result.decision || {};
+      const inputSummary = result.inputSummary || {};
+      const predictions = result.predictions || {};
+      const toolCalls = meta.toolCalls || result.agentToolCalls || [];
+      const rounds = meta.reasoningRounds || result.agentReasoningRounds || 0;
+      const engine = meta.decisionEngine || 'unknown';
+      const engineBadge = engine === 'glm' ? '<span class="badge badge-glm">GLM</span>' : '<span class="badge badge-rule">规则降级</span>';
+
+      $('reactStatus').textContent = `${engine} · ${rounds}轮 · ${toolCalls.length}次工具调用 · ${meta.latencyMs || 0}ms`;
+
+      // 数据源追踪
+      const trace = inputSummary.dataSourceTrace || [];
+      const traceHtml = trace.length === 0 ? '' : `
+        <div style="padding:8px 10px;border-bottom:1px solid var(--border);">
+          <div style="color:var(--muted);font-size:11px;margin-bottom:4px;">数据源接入 (${trace.filter(s=>s.ok).length}/${trace.length} 在线)</div>
+          ${trace.map(t => `
+            <div style="padding:2px 0;font-size:11px;">
+              ${t.ok ? '<span class="badge badge-ok">✓</span>' : '<span class="badge badge-fail">✗</span>'}
+              ${t.name || t.source} <span class="muted">[${t.backend}]</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+
+      // 工具调用记录
+      const toolCallsHtml = toolCalls.length === 0
+        ? '<div class="muted" style="padding:8px 10px;">本次推理未调用工具（GLM 直接给出判定）</div>'
+        : toolCalls.map(tc => `
+          <div class="tool-call ${tc.ok ? '' : 'failed'}">
+            <div class="tc-head">
+              <span class="tc-name">🔧 ${tc.name}</span>
+              <span class="tc-meta">轮${tc.round} · ${tc.durationMs || 0}ms ${tc.ok ? '' : '· 失败'}</span>
+            </div>
+            <div class="tc-meta">参数: <code>${JSON.stringify(tc.args || {})}</code></div>
+            <div class="tc-result">${tc.ok ? JSON.stringify(tc.result || {}).slice(0, 200) : ('错误: ' + (tc.result?.error || tc.error || ''))}</div>
+          </div>
+        `).join('');
+
+      // 最终判定
+      const decisionHtml = `
+        <div style="padding:8px 10px;border-top:1px solid var(--border);background:rgba(188,140,255,0.05);">
+          <div style="color:var(--muted);font-size:11px;margin-bottom:4px;">最终判定</div>
+          <div>${engineBadge} <strong style="color:${decision.qualityJudgement === '合格' ? 'var(--green)' : 'var(--red)'};">${decision.qualityJudgement || '?'}</strong> · 风险 <span style="color:var(--yellow);">${decision.riskLevel || '?'}</span></div>
+          <div class="muted" style="font-size:11px;margin-top:4px;">根因: ${(decision.rootCause || '').slice(0, 100)}</div>
+          <div class="muted" style="font-size:11px;margin-top:2px;">处置: ${(decision.actionSuggestion || '').slice(0, 100)}</div>
+          <div class="muted" style="font-size:10px;margin-top:4px;">模型 v${predictions.modelVersion || '?'} · 标定${predictions.modelCalibratedAt ? predictions.modelCalibratedAt : '未标定'}</div>
+        </div>
+      `;
+
+      $('reactDetail').innerHTML = `
+        <div style="padding:8px 10px;border-bottom:1px solid var(--border);">
+          <div style="color:var(--muted);font-size:11px;">批次 <span style="color:var(--blue);">${inputSummary.batchId || '?'}</span> · ${inputSummary.concreteGrade || '?'}</div>
+          <div class="muted" style="font-size:11px;">token: ${meta.tokenUsage ? `in=${meta.tokenUsage.prompt_tokens} out=${meta.tokenUsage.completion_tokens}` : '--'} · 总耗时 ${meta.latencyMs || 0}ms</div>
+        </div>
+        ${traceHtml}
+        <div style="padding:8px 10px;border-bottom:1px solid var(--border);">
+          <div style="color:var(--muted);font-size:11px;margin-bottom:4px;">ReAct 工具调用 (${toolCalls.length}次, ${rounds}轮)</div>
+        </div>
+        ${toolCallsHtml}
+        ${decisionHtml}
+      `;
+
+      // 自动填充 batchId 到日志查询框
+      if (inputSummary.batchId) {
+        $('logBatchId').value = inputSummary.batchId;
+        refreshRunLogs();
+      }
+    }
+
+    async function refreshAll() {
+      await Promise.all([refreshHealth(), refreshEvents()]);
+    }
+
+    async function triggerCase(caseType) {
+      $('eventStatus').textContent = `正在触发 ${caseType} 批次...`;
+      $('reactStatus').textContent = 'GLM 推理中...';
+      try {
+        const res = await fetch('/api/run-agent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ caseType })
+        });
+        const data = await res.json();
+        if (data.ok && data.result) {
+          renderReactDetail(data.result);
+        } else {
+          $('reactStatus').textContent = '触发失败: ' + (data.error || '未知错误');
+        }
+      } catch (e) {
+        $('reactStatus').textContent = '请求失败: ' + e.message;
+      }
+      await refreshEvents();
+    }
+
+    // 加载离线评估结果（eval-result.json），渲染混淆矩阵 + 指标
+    async function loadEvalResult() {
+      $("evalStatus").textContent = "加载中...";
+      const panel = $("evalPanel");
+      try {
+        // 尝试加载 GLM 评估结果，没有则降级到规则引擎基线
+        let resp = await fetch("/local-agent/eval-result-glm.json");
+        if (!resp.ok) resp = await fetch("/local-agent/eval-result.json");
+        if (!resp.ok) throw new Error(`评估文件不存在（HTTP ${resp.status}）`);
+        const r = await resp.json();
+        const engineLabel = r.engine?.glm > 0 ? `GLM(${r.engine.glm})` : `规则(${r.engine?.rule || 0})`;
+        $("evalStatus").textContent = `${r.validBatches} 批次 · ${engineLabel} · ${r.evaluatedAt?.slice(0, 19) || ""}`;
+
+        // 二分类指标
+        const b = r.binary || {};
+        const binMatrix = b.matrix || {};
+        const binHtml = `
+          <div style="min-width: 240px;">
+            <div style="color:#8ab4f8; font-weight: 600; margin-bottom: 6px;">合格/异常 二分类（异常为正）</div>
+            <table style="background: var(--card);">
+              <tr style="color:#8b949e;"><th></th><th>合格</th><th>异常</th></tr>
+              <tr><td style="color:#8b949e;">合格</td><td style="text-align:center;color:#3fb950;">${binMatrix["合格"]?.["合格"] || 0}</td><td style="text-align:center;color:#f85149;">${binMatrix["合格"]?.["异常"] || 0}</td></tr>
+              <tr><td style="color:#8b949e;">异常</td><td style="text-align:center;color:#f85149;">${binMatrix["异常"]?.["合格"] || 0}</td><td style="text-align:center;color:#3fb950;">${binMatrix["异常"]?.["异常"] || 0}</td></tr>
+            </table>
+            <div style="margin-top: 6px; font-size: 11px; line-height: 1.6;">
+              <div>准确率 <b style="color:#3fb950;">${(b.accuracy*100).toFixed(1)}%</b></div>
+              <div>精确率 <b>${(b.precision*100).toFixed(1)}%</b> · 召回率 <b>${(b.recall*100).toFixed(1)}%</b></div>
+              <div>F1 <b style="color:#3fb950;">${b.f1.toFixed(4)}</b> (TP=${b.tp} FP=${b.fp} FN=${b.fn} TN=${b.tn})</div>
+            </div>
+          </div>`;
+
+        // 6 类根因 macro-F1
+        const rc = r.rootCause || {};
+        const perClass = rc.perClass || [];
+        const rootCats = ["lump_tight", "segregation_loose", "mix_deviation", "material_abnormal", "current_abnormal", "drywet_abnormal", "none"];
+        const rootHtml = `
+          <div style="min-width: 360px; flex: 1;">
+            <div style="color:#8ab4f8; font-weight: 600; margin-bottom: 6px;">6 类根因 + none 多分类 · macro-F1 = <span style="color:${rc.macroF1 > 0.6 ? '#3fb950' : rc.macroF1 > 0.4 ? '#d29922' : '#f85149'};">${rc.macroF1.toFixed(4)}</span></div>
+            <table style="background: var(--card);">
+              <tr style="color:#8b949e;"><th style="text-align:left;">类别</th><th>support</th><th>P</th><th>R</th><th>F1</th></tr>
+              ${perClass.map(c => {
+                const color = c.f1 > 0.8 ? '#3fb950' : c.f1 > 0.5 ? '#d29922' : c.f1 > 0 ? '#f0883e' : '#f85149';
+                return `<tr><td style="color:#c9d1d9;">${c.category}</td><td style="text-align:center;">${c.support}</td><td style="text-align:center;">${c.precision.toFixed(2)}</td><td style="text-align:center;">${c.recall.toFixed(2)}</td><td style="text-align:center;color:${color};font-weight:600;">${c.f1.toFixed(3)}</td></tr>`;
+              }).join("")}
+            </table>
+          </div>`;
+
+        // 回归指标
+        const s = r.slumpRegression || {};
+        const regHtml = `
+          <div style="min-width: 200px;">
+            <div style="color:#8ab4f8; font-weight: 600; margin-bottom: 6px;">坍落度预测回归</div>
+            <div style="background: var(--card); padding: 10px; border-radius: 6px; font-size: 12px; line-height: 1.8;">
+              <div>样本数 <b>${s.n}</b></div>
+              <div>MAE <b style="color:${s.mae < 8 ? '#3fb950' : s.mae < 12 ? '#d29922' : '#f85149'};">${s.mae.toFixed(2)} mm</b></div>
+              <div>RMSE <b>${s.rmse.toFixed(2)} mm</b></div>
+              <div>R² <b style="color:${s.r2 > 0.85 ? '#3fb950' : s.r2 > 0.7 ? '#d29922' : '#f85149'};">${s.r2.toFixed(4)}</b></div>
+            </div>
+            <div style="margin-top: 8px; font-size: 11px; color: #8b949e;">
+              行业经验法（人工目测）<br>RMSE 通常 15-25mm
+            </div>
+          </div>`;
+
+        panel.innerHTML = binHtml + rootHtml + regHtml;
+      } catch (e) {
+        $("evalStatus").textContent = "加载失败";
+        panel.innerHTML = `<div class="muted" style="padding: 20px; color: #f85149;">加载评估结果失败：${e.message}<br>请先运行：<code style="color:#8ab4f8;">cd local-agent && node evaluate.mjs --json eval-result.json</code></div>`;
+      }
+    }
+
+    refreshAll();
+    setInterval(refreshAll, 2000);
+  </script>
+</body>
+</html>
