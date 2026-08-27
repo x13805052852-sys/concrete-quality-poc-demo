@@ -19,7 +19,7 @@ local-agent/
 
 ## 怎么运行
 
-在终端进入 `场景一/local-agent` 后运行：
+在仓库根目录进入 `local-agent` 后运行：
 
 ```bash
 node agent.mjs --all

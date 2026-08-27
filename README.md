@@ -7,8 +7,8 @@
 ## 文件结构
 
 ```
-场景一副本/
-├── quality-agent-cockpit.html         # 受控型质量Agent驾驶舱（主界面）
+concrete-quality-poc-demo/
+├── concrete-quality-poc-demo.html     # 受控型质量Agent驾驶舱（主界面）
 ├── backend-console.html               # 后台运行日志（Agent ReAct推理/适配层/工具调用）
 ├── server.mjs                         # 本地前后端联动服务（HTTP API）
 ├── CONTEXT.md                         # 术语表与边界口径
@@ -202,33 +202,30 @@ graph TD
 运行方式：
 
 ```bash
+# 以下命令均在仓库根目录执行
+
 # 1. 生成样例数据库（40批次：20合格+20异常，6类根因）
-cd local-agent/db
-python3 seed_demo_db.py
+python3 local-agent/db/seed_demo_db.py
 
 # 2. （可选）标定预测模型参数——POC数据是预测值，生产用实验室实测值
-cd local-agent
-python3 calibrate.py --db db/quality-agent-demo.sqlite --dry-run  # 预览
-python3 calibrate.py --csv historical_slump_data.csv               # 正式标定
+python3 local-agent/calibrate.py --db local-agent/db/quality-agent-demo.sqlite --dry-run  # 预览
+python3 local-agent/calibrate.py --csv historical_slump_data.csv                         # 正式标定
 
 # 3. 启动本地服务
-cd ..
 node server.mjs
 
 # 4. 打开浏览器
 open http://127.0.0.1:8787
 
 # 5. （可选）离线评估：遍历40批次，输出 合格/异常混淆矩阵 + 6类根因 macro-F1 + 坍落度 MAE/RMSE/R²
-cd local-agent
-node evaluate.mjs                       # 控制台打印
-node evaluate.mjs --json eval-result.json  # 额外写 JSON
-GLM_API_KEY=xxx node evaluate.mjs        # 走真实 GLM 研判（缺 key 自动降级到规则引擎）
+node local-agent/evaluate.mjs                              # 控制台打印
+node local-agent/evaluate.mjs --json local-agent/eval-result.json  # 额外写 JSON
+GLM_API_KEY=xxx node local-agent/evaluate.mjs              # 走真实 GLM 研判（缺 key 自动降级到规则引擎）
 
 # 6. （可选）单元测试 + 混沌测试 + 性能基准
-cd local-agent
-node --test test.mjs                    # 17 个断言：model-params/适配器/工具/Agent端到端
-node chaos.mjs                          # 6 个故障注入用例：GLM失效/特征缺失/空批次降级
-node benchmark.mjs --concurrency 1,5,10 # 并发性能 P50/P95/吞吐
+node --test local-agent/test.mjs                            # 17 个断言：model-params/适配器/工具/Agent端到端
+node local-agent/chaos.mjs                                  # 6 个故障注入用例：GLM失效/特征缺失/空批次降级
+node local-agent/benchmark.mjs --concurrency 1,5,10          # 并发性能 P50/P95/吞吐
 
 # 7. （可选）HITL 闭环执行（POST 调整动作 → 模拟 → 重跑研判 → 对比）
 curl -X POST http://127.0.0.1:8787/api/execute-action \
@@ -236,9 +233,8 @@ curl -X POST http://127.0.0.1:8787/api/execute-action \
   -d '{"batchId":"JB-C35-026-C","action":"add_water","magnitude":2,"operator":"质检员"}'
 
 # 8. （可选）清理 agent_run_logs 旧日志（生产建议 cron 定时）
-cd local-agent
-python3 db/mutate.py stats-run-logs --db db/quality-agent-demo.sqlite   # 查看分布
-python3 db/mutate.py purge-run-logs --db db/quality-agent-demo.sqlite --days 7 --vacuum  # 保留7天
+python3 local-agent/db/mutate.py stats-run-logs --db local-agent/db/quality-agent-demo.sqlite   # 查看分布
+python3 local-agent/db/mutate.py purge-run-logs --db local-agent/db/quality-agent-demo.sqlite --days 7 --vacuum  # 保留7天
 
 # 9. （可选）切换适配器 backend 演示（无需真实产线）
 PLC_BACKEND=mock VISION_BACKEND=mock CTX_BACKEND=mock ERP_BACKEND=mock node server.mjs
@@ -286,20 +282,6 @@ PLC_BACKEND=mock VISION_BACKEND=mock CTX_BACKEND=mock ERP_BACKEND=mock node serv
 
 > 评估脚本不依赖 server 端口，直接 `import agent.mjs`，可在 CI 中跑回归。生产接入真实数据后用同一脚本即可持续监控模型漂移。
 
-
-本地服务运行方式：
-
-```bash
-cd /Users/quanzhilongxiaojiaoqi/Desktop/简历修改/场景一副本
-python3 local-agent/db/seed_demo_db.py    # 生成样例库（首次或重置数据时）
-node server.mjs                            # 启动服务
-```
-
-然后打开：
-
-```text
-http://127.0.0.1:8787
-```
 
 可检查接口：
 
@@ -366,8 +348,7 @@ select case_type,batch_id,plant,concrete_grade from production_batches;
 2. 用浏览器打开 `http://127.0.0.1:8787`
 3. 点击“合格批次”查看后端Agent返回的正常放行链路
 4. 点击“异常批次”查看后端Agent返回的异常识别、HITL确认和拦截逻辑
-5. 如需脱离后端查看静态演示，可直接打开 `quality-agent-cockpit.html`
-6. 如需保留原始监控演示，可打开 `concrete-quality-poc-demo.html`
+5. 如需脱离后端查看静态演示，可直接打开 `concrete-quality-poc-demo.html`
 
 ## 预期价值
 
@@ -375,4 +356,3 @@ select case_type,batch_id,plant,concrete_grade from production_batches;
 2. 强度标准差稳定控制在3.0MPa以内
 3. 客户质量类投诉同比下降50%
 4. 剩退土占比控制在1‰以下
-

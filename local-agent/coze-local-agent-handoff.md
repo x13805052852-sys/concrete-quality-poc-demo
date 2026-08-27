@@ -11,7 +11,7 @@
 3. 配对成功后，在 Coze 对话里让本地 Agent 执行以下任务：
 
 ```text
-请进入 /Users/quanzhilongxiaojiaoqi/Desktop/简历修改/场景一/local-agent，
+请进入当前仓库的 local-agent 目录，
 运行 node agent.mjs --all，
 然后总结 reports/qualified-report.md 和 reports/abnormal-report.md 的输出差异。
 ```

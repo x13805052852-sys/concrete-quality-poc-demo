@@ -299,8 +299,7 @@ async function handleRunAgent(req, res, url) {
 
 function serveStatic(req, res, url) {
   let pathname = decodeURIComponent(url.pathname);
-  if (pathname === "/") pathname = "/quality-agent-cockpit.html";
-  if (pathname === "/v2" || pathname === "/next") pathname = "/quality-agent-cockpit-v2.html";
+  if (pathname === "/") pathname = "/concrete-quality-poc-demo.html";
 
   const requestedPath = path.normalize(path.join(__dirname, pathname));
   if (!requestedPath.startsWith(__dirname)) {
@@ -352,7 +351,7 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, 200, {
         ok: true,
         service: "quality-agent-local-server",
-        cockpit: "/quality-agent-cockpit.html",
+        cockpit: "/concrete-quality-poc-demo.html",
         backendConsole: "/backend-console.html",
         agent: "local-agent/agent.mjs",
         database: {
