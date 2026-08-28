@@ -219,7 +219,7 @@ def main():
 
     # 加载当前参数（获取 baseline）
     params = load_params()
-    baseline_a = params.get("currentBaselineA", {}).get("value", 42)
+    baseline_a = params.get("currentBaselineA", {}).get("value", 57.5)
     print(f"    电流基准值: {baseline_a}A")
 
     # 拟合

@@ -21,9 +21,15 @@ CREATE TABLE IF NOT EXISTS production_batches (
   status TEXT NOT NULL DEFAULT '待检',
   root_cause_category TEXT,
   source_note TEXT NOT NULL,
-  -- 实验室实测坍落度/扩展度（供 calibrate.py 标定 / evaluate.py 评估用）
+  condition_code TEXT,
+  -- 规则样本中的观测指标（供 calibrate.py 标定 / evaluate.py 评估用）
   measured_slump REAL,
-  measured_spread REAL
+  measured_spread REAL,
+  measured_slump_time REAL,
+  field_judgement TEXT,
+  disposition_action TEXT,
+  retest_required INTEGER NOT NULL DEFAULT 0,
+  data_source TEXT NOT NULL DEFAULT 'RULE_DERIVED'
 );
 
 -- 兼容旧库：若 production_batches 已存在但缺 status 列，则补上。

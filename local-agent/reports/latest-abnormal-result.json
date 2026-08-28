@@ -3,7 +3,7 @@
   "version": "local-poc-1.0",
   "boundary": "当前主链路使用 SQLite/mock 样例数据；adapters/ 提供统一接口和部分协议代码骨架，但 opcua/rest/rtsp 尚未完成现场联调。配置 API Key 时可调用 GLM，失败会明确降级到规则研判；HITL 仅模拟调整并保留人工确认，不执行真实生产控制。",
   "runMeta": {
-    "totalDurationMs": 9320,
+    "totalDurationMs": 1108,
     "nodeCount": 5,
     "simulateLatency": true,
     "adapterBackends": [
@@ -26,9 +26,9 @@
     ]
   },
   "inputSummary": {
-    "batchId": "JB-C35-026-C",
-    "plant": "江北搅拌站",
-    "concreteGrade": "C35泵送",
+    "batchId": "C30-20260827-009",
+    "plant": "龙山搅拌站",
+    "concreteGrade": "C30泵送",
     "dataSources": [
       "搅拌/卸料视频特征",
       "PLC电流时序",
@@ -51,7 +51,7 @@
           "flowability",
           "wallAdhesion"
         ],
-        "sourcePath": "visual_features(batchId=JB-C35-026-C)",
+        "sourcePath": "visual_features(batchId=C30-20260827-009)",
         "ok": true,
         "note": "POC: SQLite 预计算特征；目标接口骨架: RTSP+视觉模型（未现场验证）"
       },
@@ -66,11 +66,11 @@
           "stableAfterSec",
           "trend",
           "fluctuation",
-          "points[0]"
+          "points[160]"
         ],
-        "sourcePath": "sensor_current_points(batchId=JB-C35-026-C)",
+        "sourcePath": "sensor_current_points(batchId=C30-20260827-009)",
         "ok": true,
-        "pointCount": 0,
+        "pointCount": 160,
         "note": "POC: SQLite 160点静态时序；目标接口骨架: OPC UA 订阅（点位与采样率需现场确认）"
       },
       {
@@ -83,7 +83,7 @@
           "pasteAggregateRatio",
           "executionDeviation"
         ],
-        "sourcePath": "mix_features + quality_rules(grade=C35泵送)",
+        "sourcePath": "mix_features + quality_rules(grade=C30泵送)",
         "ok": true,
         "note": "POC: SQLite mix_features 表；生产: ERP REST API /api/mix-design/{grade}"
       },
@@ -97,7 +97,7 @@
           "transportDistanceKm",
           "equipmentEfficiency"
         ],
-        "sourcePath": "context_features(batchId=JB-C35-026-C)",
+        "sourcePath": "context_features(batchId=C30-20260827-009)",
         "ok": true,
         "note": "POC: SQLite 静态值；生产: 和风天气API + GPS调度 + PLC设备状态"
       },
@@ -109,7 +109,7 @@
         "fields": [
           "materialStatus"
         ],
-        "sourcePath": "context_features.material_status(batchId=JB-C35-026-C)",
+        "sourcePath": "context_features.material_status(batchId=C30-20260827-009)",
         "ok": true,
         "note": "POC: SQLite 字段；生产: ERP /api/inventory/check"
       },
@@ -121,8 +121,9 @@
         "fields": [
           "dailyAvgA"
         ],
-        "sourcePath": "AVG(avg_a) WHERE grade=C35泵送 AND date=今日",
-        "ok": false,
+        "sourcePath": "AVG(avg_a) WHERE grade=C30泵送 AND date=今日",
+        "ok": true,
+        "value": 57.9,
         "note": "POC: SQLite 聚合查询；生产: 时序库近7日滑动均值"
       }
     ],
@@ -131,6 +132,7 @@
         "name": "plc-current-adapter",
         "backend": "sqlite",
         "protocol": "none (static db)",
+        "implementationStatus": "模拟实现",
         "supportedBackends": [
           "sqlite",
           "mock",
@@ -155,6 +157,7 @@
         "name": "erp-mix-adapter",
         "backend": "sqlite",
         "protocol": "none (static db)",
+        "implementationStatus": "模拟实现",
         "supportedBackends": [
           "sqlite",
           "mock",
@@ -174,6 +177,7 @@
         "name": "vision-features-adapter",
         "backend": "sqlite",
         "protocol": "none (static db)",
+        "implementationStatus": "模拟实现",
         "supportedBackends": [
           "sqlite",
           "mock",
@@ -198,6 +202,7 @@
         "name": "context-adapter",
         "backend": "sqlite",
         "protocol": "none (static db)",
+        "implementationStatus": "模拟实现",
         "supportedBackends": [
           "sqlite",
           "mock",
@@ -219,27 +224,27 @@
     {
       "node": "输入节点",
       "status": "completed",
-      "output": "批次信息与6类数据源已结构化（标号=C35泵送，规则已按标号匹配，数据源5/6路在线）",
-      "durationMs": 401
+      "output": "批次信息与6类数据源已结构化（标号=C30泵送，规则已按标号匹配，数据源6/6路在线）",
+      "durationMs": 402
     },
     {
       "node": "规则判断节点",
       "status": "completed",
-      "output": "低",
-      "durationMs": 301
+      "output": "高",
+      "durationMs": 302
     },
     {
-      "node": "GLM质量研判节点",
+      "node": "质量研判节点",
       "status": "completed",
       "output": "异常待确认",
-      "engine": "glm",
-      "durationMs": 8216
+      "engine": "rule-fallback",
+      "durationMs": 1
     },
     {
       "node": "分支与HITL节点",
       "status": "completed",
       "output": "异常分支",
-      "durationMs": 201
+      "durationMs": 202
     },
     {
       "node": "台账归档节点",
@@ -251,52 +256,59 @@
   "nodeTimings": [
     {
       "node": "输入节点",
-      "startedAt": 1784472914580,
-      "finishedAt": 1784472914981,
-      "durationMs": 401,
-      "output": "批次信息与6类数据源已结构化（标号=C35泵送，规则已按标号匹配，数据源5/6路在线）"
+      "startedAt": 1787900829131,
+      "finishedAt": 1787900829533,
+      "durationMs": 402,
+      "output": "批次信息与6类数据源已结构化（标号=C30泵送，规则已按标号匹配，数据源6/6路在线）"
     },
     {
       "node": "规则判断节点",
-      "startedAt": 1784472914981,
-      "finishedAt": 1784472915282,
-      "durationMs": 301,
-      "output": "低"
+      "startedAt": 1787900829533,
+      "finishedAt": 1787900829835,
+      "durationMs": 302,
+      "output": "高"
     },
     {
       "node": "GLM质量研判节点",
-      "startedAt": 1784472915282,
-      "finishedAt": 1784472923498,
-      "durationMs": 8216,
+      "startedAt": 1787900829835,
+      "finishedAt": 1787900829836,
+      "durationMs": 1,
       "output": "异常待确认"
     },
     {
       "node": "分支与HITL节点",
-      "startedAt": 1784472923498,
-      "finishedAt": 1784472923699,
-      "durationMs": 201,
+      "startedAt": 1787900829836,
+      "finishedAt": 1787900830038,
+      "durationMs": 202,
       "output": "异常分支"
     },
     {
       "node": "台账归档节点",
-      "startedAt": 1784472923699,
-      "finishedAt": 1784472923900,
+      "startedAt": 1787900830038,
+      "finishedAt": 1787900830239,
       "durationMs": 201,
       "output": "可归档为POC验证报告样例"
     }
   ],
   "predictions": {
-    "slump": 161,
-    "spread": 416,
-    "slumpTime": 6.9,
-    "pasteRichness": 17,
-    "currentDeltaA": 2.9,
-    "modelVersion": "1.0.0",
+    "slump": 151,
+    "spread": 501,
+    "slumpTime": 5.4,
+    "pasteRichness": 13.5,
+    "currentDeltaA": 11.8,
+    "ruleBand": "DRY_MILD",
+    "modelVersion": "2.0.0-c30-rule",
     "modelCalibratedAt": null
   },
   "rules": {
     "node": "规则判断节点",
     "targetRules": {
+      "mixingCurrent": {
+        "min": 55,
+        "max": 60,
+        "unit": "A",
+        "label": "实时搅拌代表电流"
+      },
       "slump": {
         "min": 160,
         "max": 200,
@@ -304,32 +316,32 @@
         "label": "坍落度"
       },
       "spread": {
-        "min": 400,
-        "max": 530,
+        "min": 530,
+        "max": 570,
         "unit": "mm",
         "label": "扩展度"
       },
       "slumpTime": {
-        "min": 3,
-        "max": 7.5,
+        "min": 2.5,
+        "max": 4.5,
         "unit": "s",
         "label": "倒坍时间"
       },
       "pasteRichness": {
-        "min": 16,
+        "min": 15,
         "max": null,
         "unit": "%",
         "label": "浆体富裕度"
       },
       "waterCement": {
-        "min": 0.38,
-        "max": 0.4,
+        "min": 0.4,
+        "max": 0.42,
         "unit": "",
         "label": "水灰比"
       },
       "pasteAgg": {
-        "min": 0.34,
-        "max": 0.36,
+        "min": 0.33,
+        "max": 0.35,
         "unit": "",
         "label": "浆骨比"
       }
@@ -338,135 +350,92 @@
       {
         "metric": "slump",
         "label": "坍落度",
-        "value": 161,
+        "value": 151,
         "unit": "mm",
-        "status": "ok",
-        "message": "坍落度161mm处于目标范围"
+        "status": "low",
+        "message": "坍落度151mm低于目标下限160mm"
       },
       {
         "metric": "spread",
         "label": "扩展度",
-        "value": 416,
+        "value": 501,
         "unit": "mm",
-        "status": "ok",
-        "message": "扩展度416mm处于目标范围"
+        "status": "low",
+        "message": "扩展度501mm低于目标下限530mm"
       },
       {
         "metric": "slumpTime",
         "label": "倒坍时间",
-        "value": 6.9,
+        "value": 5.4,
         "unit": "s",
-        "status": "ok",
-        "message": "倒坍时间6.9s处于目标范围"
+        "status": "high",
+        "message": "倒坍时间5.4s高于目标上限4.5s"
       },
       {
         "metric": "pasteRichness",
         "label": "浆体富裕度",
-        "value": 17,
+        "value": 13.5,
         "unit": "%",
-        "status": "ok",
-        "message": "浆体富裕度17%处于目标范围"
+        "status": "low",
+        "message": "浆体富裕度13.5%低于目标下限15%"
       }
     ],
     "visualChecks": [
-      "浆体均匀度71%可接受",
-      "离析状态：轻微",
+      "浆体均匀度69.3%偏低",
+      "离析状态：无",
       "视觉识别浆体偏干",
       "流动性：偏弱"
     ],
     "currentChecks": [
-      "峰值电流较基准偏差2.9A，处于可观察范围",
-      "电流达稳时间112s可接受",
-      "电流趋势：缓慢回落"
+      "峰值电流较基准升高11.8A，按规则可能导致坍落度下降、扩展度下降、倒坍时间增加",
+      "电流达稳时间116s可接受",
+      "电流趋势：高位后趋稳"
     ],
+    "dataQuality": {
+      "status": "complete",
+      "missingDataSources": []
+    },
     "hardRisks": [
+      "坍落度151mm低于目标下限160mm",
+      "扩展度501mm低于目标下限530mm",
+      "倒坍时间5.4s高于目标上限4.5s",
+      "浆体富裕度13.5%低于目标下限15%",
+      "浆体均匀度69.3%偏低",
       "视觉识别浆体偏干",
-      "流动性：偏弱"
+      "流动性：偏弱",
+      "峰值电流较基准升高11.8A，按规则可能导致坍落度下降、扩展度下降、倒坍时间增加"
     ],
-    "riskScore": 20,
-    "riskLevel": "低"
+    "riskScore": 145,
+    "riskLevel": "高"
   },
   "decision": {
-    "node": "GLM质量研判节点",
+    "node": "质量研判节点",
     "qualityJudgement": "异常待确认",
-    "riskLevel": "低",
+    "riskLevel": "高",
     "keyEvidence": [
-      "视觉识别浆体偏干，干湿状态为偏干",
-      "流动性偏弱，影响泵送性能",
-      "浆体均匀度71%处于临界值",
-      "配比执行偏差显示浆体偏少，干硬",
-      "峰值电流44.9A接近上限，波动程度中等"
+      "坍落度151mm低于目标下限160mm",
+      "扩展度501mm低于目标下限530mm",
+      "倒坍时间5.4s高于目标上限4.5s",
+      "浆体富裕度13.5%低于目标下限15%",
+      "浆体均匀度69.3%偏低",
+      "视觉识别浆体偏干",
+      "流动性：偏弱",
+      "峰值电流较基准升高11.8A，按规则可能导致坍落度下降、扩展度下降、倒坍时间增加"
     ],
-    "rootCause": "配比执行偏差导致浆体偏少、干硬，流动性下降，视觉表现为偏干和轻微挂料，但无明显结团或材料异常",
-    "rootCauseCategory": "mix_deviation",
-    "actionSuggestion": "建议复核浆骨比与水灰比执行情况，按现场授权补水1-2L调整工作性，延长搅拌20秒促进均匀，重新研判后确认是否放行。",
+    "rootCause": "工作性不足，可能与浆体偏干、峰值电流升高或配比执行偏差有关；搅拌均匀性不足，视觉侧已出现离析、结团或流动性弱特征；搅拌负载偏高或达稳时间偏长，需排查含水率、投料顺序和设备状态",
+    "rootCauseCategory": "lump_tight",
+    "actionSuggestion": "建议进入人工确认：按当前 C30 工况规则执行授权处置并复测；若复核仍不合格，则暂停出料并转人工处理。",
     "requireHumanConfirm": true
   },
   "decisionMeta": {
-    "decisionEngine": "glm",
-    "reason": "GLM Agent 完成 4 轮推理（工具调用 3 次）",
-    "glmModel": "glm-4",
+    "decisionEngine": "rule-fallback",
+    "reason": "GLM_API_KEY 未配置，降级到规则研判",
+    "glmModel": null,
     "glmApiBase": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
-    "latencyMs": 8216,
-    "tokenUsage": {
-      "prompt_tokens": 16132,
-      "completion_tokens": 292,
-      "total_tokens": 16424
-    },
-    "rawResponse": {
-      "id": "20260719225521d8eeb28968a044c9",
-      "content": "{\"qualityJudgement\":\"异常待确认\",\"riskLevel\":\"低\",\"keyEvidence\":[\"视觉识别浆体偏干，干湿状态为偏干\",\"流动性偏弱，影响泵送性能\",\"浆体均匀度71%处于临界值\",\"配比执行偏差显示浆体偏少，干硬\",\"峰值电流44.9A接近上限，波动程度中等\"],\"rootCause\":\"配比执行偏差导致浆体偏少、干硬，流动性下降，视觉表现为偏干和轻微挂料，但无明显结团或材料异常\",\"rootCauseCategory\":\"mix_deviation\",\"actionSuggestion\":\"建议复核浆骨比与水灰比执行情况，按现场授权补水1-2L调整工作性，延长搅拌20秒促进均匀，重新研判后确认是否放行。\",\"requireHumanConfirm\":true}",
-      "finishReason": "stop"
-    },
-    "toolCalls": [
-      {
-        "round": 1,
-        "name": "get_grade_rules",
-        "args": {
-          "concreteGrade": "C35泵送"
-        },
-        "result": {
-          "error": "rules.filter is not a function"
-        },
-        "ok": false,
-        "durationMs": 1,
-        "timestamp": 1784472917658
-      },
-      {
-        "round": 2,
-        "name": "query_history_batches",
-        "args": {
-          "concreteGrade": "C35泵送",
-          "rootCauseCategory": "drywet_abnormal",
-          "limit": 5
-        },
-        "result": {
-          "found": 0,
-          "records": [],
-          "note": "台账库为空或不可用"
-        },
-        "ok": true,
-        "durationMs": 52,
-        "timestamp": 1784472918956
-      },
-      {
-        "round": 3,
-        "name": "query_history_batches",
-        "args": {
-          "concreteGrade": "C35泵送",
-          "limit": 5
-        },
-        "result": {
-          "found": 0,
-          "records": [],
-          "note": "台账库为空或不可用"
-        },
-        "ok": true,
-        "durationMs": 50,
-        "timestamp": 1784472920006
-      }
-    ],
-    "reasoningRounds": 4
+    "latencyMs": 0,
+    "tokenUsage": null,
+    "rawResponse": null,
+    "toolCalls": []
   },
   "branch": {
     "node": "分支与HITL节点",
@@ -478,81 +447,35 @@
   },
   "ledger": {
     "node": "台账归档节点",
-    "batchId": "JB-C35-026-C",
-    "plant": "江北搅拌站",
+    "batchId": "C30-20260827-009",
+    "plant": "龙山搅拌站",
     "line": "1号生产线",
-    "concreteGrade": "C35泵送",
-    "productionTime": "2026-07-20 16:30:00",
-    "visualConclusion": "偏干，均匀度71%，离析：轻微",
-    "currentConclusion": "峰值44.9A，达稳112s，趋势：缓慢回落",
-    "mixConclusion": "水灰比0.39，浆骨比0.31，执行偏差浆体偏少，干硬",
+    "concreteGrade": "C30泵送",
+    "productionTime": "2026-08-27 14:31:00",
+    "visualConclusion": "偏干，均匀度69.3%，离析：无",
+    "currentConclusion": "峰值69.3A，达稳116s，趋势：高位后趋稳",
+    "mixConclusion": "水灰比0.397，浆骨比0.334，执行偏差减水剂或含水率补偿偏低",
     "predictions": {
-      "slump": 161,
-      "spread": 416,
-      "slumpTime": 6.9,
-      "pasteRichness": 17,
-      "currentDeltaA": 2.9,
-      "modelVersion": "1.0.0",
+      "slump": 151,
+      "spread": 501,
+      "slumpTime": 5.4,
+      "pasteRichness": 13.5,
+      "currentDeltaA": 11.8,
+      "ruleBand": "DRY_MILD",
+      "modelVersion": "2.0.0-c30-rule",
       "modelCalibratedAt": null
     },
-    "currentAvgA": 40.9,
-    "waterCementRatio": 0.39,
-    "pasteAggregateRatio": 0.31,
-    "rootCauseCategory": "mix_deviation",
-    "expectedRootCause": "drywet_abnormal",
-    "ruleRiskLevel": "低",
+    "currentAvgA": 68.7,
+    "waterCementRatio": 0.397,
+    "pasteAggregateRatio": 0.334,
+    "rootCauseCategory": "lump_tight",
+    "expectedRootCause": "lump_tight",
+    "ruleRiskLevel": "高",
     "finalJudgement": "异常待确认",
-    "actionSuggestion": "建议复核浆骨比与水灰比执行情况，按现场授权补水1-2L调整工作性，延长搅拌20秒促进均匀，重新研判后确认是否放行。",
+    "actionSuggestion": "建议进入人工确认：按当前 C30 工况规则执行授权处置并复测；若复核仍不合格，则暂停出料并转人工处理。",
     "humanConfirmRequired": true,
     "archiveStatus": "可归档为POC验证报告样例"
   },
-  "agentToolCalls": [
-    {
-      "round": 1,
-      "name": "get_grade_rules",
-      "args": {
-        "concreteGrade": "C35泵送"
-      },
-      "result": {
-        "error": "rules.filter is not a function"
-      },
-      "ok": false,
-      "durationMs": 1,
-      "timestamp": 1784472917658
-    },
-    {
-      "round": 2,
-      "name": "query_history_batches",
-      "args": {
-        "concreteGrade": "C35泵送",
-        "rootCauseCategory": "drywet_abnormal",
-        "limit": 5
-      },
-      "result": {
-        "found": 0,
-        "records": [],
-        "note": "台账库为空或不可用"
-      },
-      "ok": true,
-      "durationMs": 52,
-      "timestamp": 1784472918956
-    },
-    {
-      "round": 3,
-      "name": "query_history_batches",
-      "args": {
-        "concreteGrade": "C35泵送",
-        "limit": 5
-      },
-      "result": {
-        "found": 0,
-        "records": [],
-        "note": "台账库为空或不可用"
-      },
-      "ok": true,
-      "durationMs": 50,
-      "timestamp": 1784472920006
-    }
-  ],
-  "agentReasoningRounds": 4
+  "agentToolCalls": [],
+  "agentReasoningRounds": 0
 }

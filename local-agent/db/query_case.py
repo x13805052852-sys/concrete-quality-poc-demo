@@ -77,9 +77,15 @@ def _build_batch_from_rows(conn, batch_row):
         "productionTime": batch_row["production_time"],
         "status": batch_row.get("status", "待检"),
         "rootCauseCategory": batch_row.get("root_cause_category"),
-        # 实验室实测值（供 calibrate.py 标定 / evaluate.py 评估用）
+        "conditionCode": batch_row.get("condition_code"),
+        "fieldJudgement": batch_row.get("field_judgement"),
+        "dispositionAction": batch_row.get("disposition_action"),
+        "retestRequired": bool(batch_row.get("retest_required", 0)),
+        "dataSource": batch_row.get("data_source", "RULE_DERIVED"),
+        # 规则样本观测值（供 calibrate.py 标定 / evaluate.py 评估用）
         "measuredSlump": batch_row.get("measured_slump"),
         "measuredSpread": batch_row.get("measured_spread"),
+        "measuredSlumpTime": batch_row.get("measured_slump_time"),
         "visual": {
             "uniformityScore": visual["uniformity_score"],
             "segregation": visual["segregation"],
@@ -151,7 +157,9 @@ def list_batches(conn):
     """返回批次列表（轻量，不含特征明细），按生产时间倒序。"""
     rows = conn.execute(
         """
-        SELECT batch_id, case_type, plant, line, concrete_grade, production_time, status, root_cause_category
+        SELECT batch_id, case_type, plant, line, concrete_grade, production_time, status,
+               root_cause_category, condition_code, measured_slump, field_judgement,
+               retest_required, data_source
         FROM production_batches
         ORDER BY production_time DESC
         """
@@ -169,6 +177,11 @@ def list_batches(conn):
                 "productionTime": r["production_time"],
                 "status": r.get("status", "待检"),
                 "rootCauseCategory": r.get("root_cause_category"),
+                "conditionCode": r.get("condition_code"),
+                "measuredSlump": r.get("measured_slump"),
+                "fieldJudgement": r.get("field_judgement"),
+                "retestRequired": bool(r.get("retest_required", 0)),
+                "dataSource": r.get("data_source", "RULE_DERIVED"),
             }
             for r in rows
         ],

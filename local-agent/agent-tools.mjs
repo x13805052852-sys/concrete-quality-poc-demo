@@ -31,7 +31,7 @@ export const AGENT_TOOLS = [
         type: "object",
         properties: {
           concreteGrade: { type: "string", description: "混凝土标号，如 C30泵送" },
-          rootCauseCategory: { type: "string", description: "根因类别（可选）：lump_tight/segregation_loose/mix_deviation/material_abnormal/current_abnormal/drywet_abnormal", enum: ["lump_tight", "segregation_loose", "mix_deviation", "material_abnormal", "current_abnormal", "drywet_abnormal"] },
+          rootCauseCategory: { type: "string", description: "根因类别（可选）：lump_tight/segregation_loose/mix_deviation/material_abnormal/current_abnormal/drywet_abnormal/data_insufficient", enum: ["lump_tight", "segregation_loose", "mix_deviation", "material_abnormal", "current_abnormal", "drywet_abnormal", "data_insufficient"] },
           limit: { type: "integer", description: "返回条数，默认5", default: 5 }
         },
         required: ["concreteGrade"]
@@ -77,7 +77,7 @@ export const AGENT_TOOLS = [
       parameters: {
         type: "object",
         properties: {
-          concreteGrade: { type: "string", description: "混凝土标号，如 C25泵送/C30泵送/C35泵送" }
+          concreteGrade: { type: "string", description: "当前POC固定为 C30泵送" }
         },
         required: ["concreteGrade"]
       }

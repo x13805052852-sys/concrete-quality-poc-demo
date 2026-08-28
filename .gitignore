@@ -19,3 +19,4 @@ venv/
 # Runtime output
 *.log
 local-agent/eval-result-ci.json
+outputs/

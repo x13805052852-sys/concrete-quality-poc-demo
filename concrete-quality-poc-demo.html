@@ -852,7 +852,7 @@
       color: #fff;
     }
 
-    /* 闭环执行状态 */
+    /* 闭环流程模拟状态 */
     .loop-status {
       padding: 8px 12px;
       background: var(--bg-card);
@@ -929,7 +929,7 @@
     .ledger-label { color: var(--text-muted); }
     .ledger-value { font-family: monospace; }
 
-    /* 自动执行日志 */
+    /* 流程模拟日志 */
     .auto-log {
       max-height: 120px;
       overflow-y: auto;
@@ -966,14 +966,14 @@
         </div>
         <div class="station-info">
           <span>📍 1号生产线</span>
-          <span>🏷 LS-C30-072</span>
+          <span id="headerBatchNo">🏷 C30批次待加载</span>
           <span>📦 C30泵送</span>
         </div>
       </div>
       <div class="header-right">
-        <div class="mode-status" title="页面使用预录/合成数据；后端模式从 /api/health 读取">
+        <div class="mode-status" title="页面使用预录视频与SQLite C30规则批次；后端模式从 /api/health 读取">
           <span class="mode-label">页面</span>
-          <span class="mode-pill synthetic">SYNTHETIC</span>
+          <span class="mode-pill mixed">MIXED</span>
           <span class="mode-label">后端</span>
           <span class="mode-pill offline" id="backendMode">检测中</span>
         </div>
@@ -988,15 +988,15 @@
       <div class="panel">
         <div class="panel-header">
           <span class="panel-title">数据源状态</span>
-          <span id="dataSourceCount">0/6 演示源</span>
+          <span id="dataSourceCount">0/6 数据源</span>
         </div>
         <div class="panel-body">
           <div class="source-disclosure">
             <div class="source-disclosure-row">
               <span class="source-disclosure-title">当前页面数据</span>
-              <span class="mode-pill synthetic">SYNTHETIC</span>
+              <span class="mode-pill mixed">MIXED</span>
             </div>
-            <div class="source-disclosure-detail">预录视频 + 前端合成时序，非实时产线数据。</div>
+            <div class="source-disclosure-detail">预录视频 + SQLite C30规则批次与电流回放。</div>
           </div>
           <div class="led-row">
             <span class="led-label">搅拌视频（预录）</span>
@@ -1063,9 +1063,8 @@
             <div class="led" id="ledEquip"></div>
           </div>
           <div class="value-card">
-            <div class="value-label">搅拌机效率</div>
+            <div class="value-label">搅拌机状态</div>
             <span class="value-number mono" id="mixerEff">--</span>
-            <span class="value-unit">%</span>
           </div>
         </div>
       </div>
@@ -1138,7 +1137,7 @@
           <!-- 右侧：电流实时表 -->
           <div class="content-panel">
             <div class="content-header">
-              <span class="content-title">⚡ 电流时序监测（模拟）</span>
+              <span class="content-title">⚡ 电流时序监测（SQLite回放）</span>
               <span id="chartStatus">SIM</span>
             </div>
             <div class="content-body">
@@ -1157,17 +1156,17 @@
                   <div class="predict-item">
                     <div class="predict-label">坍落度</div>
                     <div class="predict-value" id="predictSlump">--</div>
-                    <div class="predict-target">目标: 160-210mm</div>
+                    <div class="predict-target">目标: 160-200mm</div>
                   </div>
                   <div class="predict-item">
                     <div class="predict-label">扩展度</div>
                     <div class="predict-value" id="predictSpread">--</div>
-                    <div class="predict-target">目标: 400-550mm</div>
+                    <div class="predict-target">目标: 530-570mm</div>
                   </div>
                   <div class="predict-item">
                     <div class="predict-label">倒坍时间</div>
                     <div class="predict-value" id="predictSlumpTime">--</div>
-                    <div class="predict-target">目标: 3-8s</div>
+                    <div class="predict-target">目标: 2.5-4.5s</div>
                   </div>
                   <div class="predict-item">
                     <div class="predict-label">浆体富裕度</div>
@@ -1196,10 +1195,10 @@
             </div>
           </div>
 
-          <!-- 闭环执行状态 -->
+          <!-- 闭环流程模拟状态 -->
           <div class="loop-status" id="loopStatus">
-            <div class="loop-title" id="loopTitle">闭环执行状态</div>
-            <div class="loop-detail" id="loopDetail">等待Agent判定后自动执行</div>
+            <div class="loop-title" id="loopTitle">闭环流程模拟状态</div>
+            <div class="loop-detail" id="loopDetail">等待Agent判定后生成建议</div>
           </div>
 
           <div class="decision-box" id="decisionBox">
@@ -1330,7 +1329,7 @@
 
           <div class="ledger-section">
             <div class="ledger-title">基本信息</div>
-            <div class="ledger-row"><span class="ledger-label">车次编号</span><span class="ledger-value" id="lBatchNo">LS-C30-072</span></div>
+            <div class="ledger-row"><span class="ledger-label">车次编号</span><span class="ledger-value" id="lBatchNo">C30批次待加载</span></div>
             <div class="ledger-row"><span class="ledger-label">混凝土标号</span><span class="ledger-value" id="lGrade">C30泵送</span></div>
             <div class="ledger-row"><span class="ledger-label">生产线</span><span class="ledger-value" id="lLine">1号生产线</span></div>
             <div class="ledger-row"><span class="ledger-label">监测时间</span><span class="ledger-value" id="lTime">--</span></div>
@@ -1381,9 +1380,9 @@
 
           <div class="rule-card">
             <div class="rule-title">📊 电流-坍落度关联规则</div>
-            <div class="rule-item">电流↑<span class="rule-highlight">5A</span> → 坍落度↓<span class="rule-highlight">25mm</span>、扩展度↓<span class="rule-highlight">40-50mm</span></div>
-            <div class="rule-item">电流↓<span class="rule-highlight">5A</span> → 坍落度↑<span class="rule-highlight">25mm</span>、扩展度↑<span class="rule-highlight">40-50mm</span></div>
-            <div class="rule-item">倒坍时间: 电流↑5A → 时间↑<span class="rule-highlight">1-1.5s</span></div>
+            <div class="rule-item">正常电流: <span class="rule-highlight">55-60A</span>（C30）</div>
+            <div class="rule-item">偏干: <span class="rule-highlight">60-80A</span>，坍落度/扩展度下降</div>
+            <div class="rule-item">偏稀: <span class="rule-highlight">40-55A</span>，扩展度增大、倒坍时间缩短</div>
           </div>
 
           <div class="rule-card">
@@ -1395,9 +1394,9 @@
 
           <div class="rule-card">
             <div class="rule-title">🎯 质量目标范围</div>
-            <div class="rule-item">坍落度: <span class="rule-highlight">160-210mm</span></div>
-            <div class="rule-item">扩展度: <span class="rule-highlight">400-550mm</span></div>
-            <div class="rule-item">倒坍时间: <span class="rule-highlight">3-8s</span></div>
+            <div class="rule-item">坍落度: <span class="rule-highlight">180±20mm</span></div>
+            <div class="rule-item">扩展度: <span class="rule-highlight">530-570mm</span></div>
+            <div class="rule-item">倒坍时间: <span class="rule-highlight">2.5-4.5s</span></div>
             <div class="rule-item">浆体富裕度: <span class="rule-highlight">≥15%</span></div>
           </div>
 
@@ -1408,17 +1407,17 @@
 
           <div class="optimization-card">
             <div class="opt-title">🔄 模型迭代状态</div>
-            <div class="opt-row"><span class="opt-label">模型版本</span><span class="opt-value">v2.3.1</span></div>
-            <div class="opt-row"><span class="opt-label">训练样本数</span><span class="opt-value" id="trainSamples">12,847</span></div>
-            <div class="opt-row"><span class="opt-label">上次优化</span><span class="opt-value">2026-06-09</span></div>
-            <div class="opt-row"><span class="opt-label">预测准确率</span><span class="opt-value" style="color:var(--green)">94.2%</span></div>
+            <div class="opt-row"><span class="opt-label">模型版本</span><span class="opt-value">v2.0.0-c30-rule</span></div>
+            <div class="opt-row"><span class="opt-label">规则样例数</span><span class="opt-value" id="trainSamples">300</span></div>
+            <div class="opt-row"><span class="opt-label">适用范围</span><span class="opt-value">仅 C30 泵送</span></div>
+            <div class="opt-row"><span class="opt-label">规则校验</span><span class="opt-value" style="color:var(--green)">300/300 通过</span></div>
           </div>
 
           <div class="optimization-card">
             <div class="opt-title">📈 质量标准动态更新</div>
-            <div class="opt-row"><span class="opt-label">坍落度阈值</span><span class="opt-value">自动调整中</span></div>
-            <div class="opt-row"><span class="opt-label">电流波动容忍度</span><span class="opt-value">±3A</span></div>
-            <div class="opt-row"><span class="opt-label">季节适配</span><span class="opt-value">夏季模式</span></div>
+            <div class="opt-row"><span class="opt-label">坍落度阈值</span><span class="opt-value">160-200mm</span></div>
+            <div class="opt-row"><span class="opt-label">正常电流</span><span class="opt-value">55-60A</span></div>
+            <div class="opt-row"><span class="opt-label">参数来源</span><span class="opt-value">C30 五档规则</span></div>
           </div>
 
           <div class="divider"></div>
@@ -1427,19 +1426,19 @@
           <div class="panel-title" style="margin-bottom:8px">历史数据积累</div>
 
           <div class="history-stats">
-            <div class="history-title">📊 近30日统计</div>
+            <div class="history-title">📊 规则样例库统计（近30日）</div>
             <div class="stat-grid">
               <div class="stat-item">
-                <div class="stat-num ok" id="totalBatches">847</div>
+                <div class="stat-num ok" id="totalBatches">300</div>
                 <div class="stat-label">总批次</div>
               </div>
               <div class="stat-item">
-                <div class="stat-num ok" id="passRate">96.8%</div>
-                <div class="stat-label">合格率</div>
+                <div class="stat-num ok" id="passRate">60.0%</div>
+                <div class="stat-label">正常样例占比</div>
               </div>
               <div class="stat-item">
-                <div class="stat-num warn" id="adjustCount">27</div>
-                <div class="stat-label">调整次数</div>
+                <div class="stat-num warn" id="adjustCount">120</div>
+                <div class="stat-label">需复核样例</div>
               </div>
             </div>
           </div>
@@ -1448,29 +1447,29 @@
             <div class="history-title">📋 近5批次记录</div>
             <div class="history-list" id="historyList">
               <div class="history-row">
-                <span>LS-C30-071</span>
-                <span>186mm</span>
+                <span>C30-20260827-010</span>
+                <span>194mm</span>
                 <span class="history-badge ok">合格</span>
               </div>
               <div class="history-row">
-                <span>LS-C30-070</span>
-                <span>192mm</span>
+                <span>C30-20260827-009</span>
+                <span>152mm</span>
+                <span class="history-badge adjusted">待复核</span>
+              </div>
+              <div class="history-row">
+                <span>C30-20260827-008</span>
+                <span>198mm</span>
                 <span class="history-badge ok">合格</span>
               </div>
               <div class="history-row">
-                <span>LS-C30-069</span>
-                <span>175mm</span>
-                <span class="history-badge adjusted">调整后合格</span>
+                <span>C30-20260827-007</span>
+                <span>231mm</span>
+                <span class="history-badge adjusted">已拦截</span>
               </div>
               <div class="history-row">
-                <span>LS-C30-068</span>
-                <span>188mm</span>
-                <span class="history-badge ok">合格</span>
-              </div>
-              <div class="history-row">
-                <span>LS-C30-067</span>
-                <span>181mm</span>
-                <span class="history-badge ok">合格</span>
+                <span>C30-20260827-006</span>
+                <span>210mm</span>
+                <span class="history-badge adjusted">待复核</span>
               </div>
             </div>
           </div>
@@ -1484,7 +1483,7 @@
       <div class="fixed-log-header" id="logHeader">
         <div class="fixed-log-title">
           <span class="drag-handle"></span>
-          📋 自动执行日志
+          📋 流程模拟日志
           <span style="font-size:10px;color:var(--text-muted);margin-left:8px" id="logCaseType">案例: --</span>
         </div>
         <div class="log-header-actions">
@@ -1505,19 +1504,17 @@
           <span class="modal-title">检测不合格 - 需人工确认</span>
         </div>
         <div class="modal-body">
-          <div class="modal-reason">
+          <div class="modal-reason" id="failReasons">
             <div class="modal-reason-title">不合格指标：</div>
-            <div class="modal-reason-item">坍落度: 128mm (目标160-210mm，偏低32mm)</div>
-            <div class="modal-reason-item">扩展度: 352mm (目标400-550mm，偏低48mm)</div>
-            <div class="modal-reason-item">视觉检测: 浆体偏干，均匀度仅62%</div>
+            <div class="modal-reason-item">等待本批次研判结果...</div>
           </div>
-          <div class="modal-suggestion">
-            💡 系统建议：自动延长搅拌30秒 + 补水2L，重新判定
+          <div class="modal-suggestion" id="failSuggestion">
+            💡 系统建议：按 C30 五档规则复核并处置
           </div>
         </div>
         <div class="modal-footer">
           <button class="modal-btn modal-btn-cancel" onclick="cancelAdjust()">暂停流程</button>
-          <button class="modal-btn modal-btn-confirm" onclick="confirmAdjust()">确认调整</button>
+          <button class="modal-btn modal-btn-confirm" onclick="confirmAdjust()">确认调整模拟</button>
         </div>
       </div>
     </div>
@@ -1539,7 +1536,7 @@
         </div>
       </div>
       <div class="footer-right">
-        <button class="btn btn-primary" id="approveBtn" onclick="approve()">确认放行</button>
+        <button class="btn btn-primary" id="approveBtn" onclick="approve()">确认模拟放行</button>
       </div>
     </footer>
   </div>
@@ -1559,16 +1556,18 @@
       envTemp: 22,
       caseType: 0,  // 0=首次(成功), 1=二次(失败), 循环
       totalRuns: 0,  // 总运行次数
-      batchCounter: 72,  // 批次计数器
       history: [
-        { id: 'LS-C30-071', slump: 186, status: 'ok' },
-        { id: 'LS-C30-070', slump: 192, status: 'ok' },
-        { id: 'LS-C30-069', slump: 175, status: 'adjusted' },
-        { id: 'LS-C30-068', slump: 188, status: 'ok' },
-        { id: 'LS-C30-067', slump: 181, status: 'ok' }
+        { id: 'C30-20260827-010', slump: 194, status: 'ok', badgeText: '已放行' },
+        { id: 'C30-20260827-009', slump: 152, status: 'adjusted', badgeText: '待复核' },
+        { id: 'C30-20260827-008', slump: 198, status: 'ok', badgeText: '已放行' },
+        { id: 'C30-20260827-007', slump: 231, status: 'adjusted', badgeText: '已拦截' },
+        { id: 'C30-20260827-006', slump: 210, status: 'adjusted', badgeText: '待复核' }
       ],
-      stats: { total: 847, passRate: 96.8, adjustments: 27 }
+      stats: { total: 300, passRate: 60, reviews: 120 }
     };
+    state.batchData = null;
+    state.currentSeries = [];
+    state.agentResult = null;
 
     const $ = id => document.getElementById(id);
 
@@ -1629,6 +1628,7 @@
       drawChart();
       initDrag();
       loadBackendMode();
+      loadDatasetOverview();
     }
 
     function classifyBackendMode(adapters = []) {
@@ -1663,6 +1663,45 @@
       }
     }
 
+    function renderDatasetOverview() {
+      $('trainSamples').textContent = state.stats.total.toLocaleString();
+      $('totalBatches').textContent = state.stats.total;
+      $('passRate').textContent = state.stats.passRate.toFixed(1) + '%';
+      $('adjustCount').textContent = state.stats.reviews;
+      $('historyList').innerHTML = state.history.map(item => `
+        <div class="history-row">
+          <span>${item.id}</span>
+          <span>${item.slump}mm</span>
+          <span class="history-badge ${item.status}">${item.badgeText}</span>
+        </div>
+      `).join('');
+    }
+
+    async function loadDatasetOverview() {
+      try {
+        const response = await fetch('/api/batches', { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const payload = await response.json();
+        const batches = payload.batches || [];
+        const normalCount = batches.filter(batch => batch.caseType === 'qualified').length;
+        state.stats = {
+          total: batches.length,
+          passRate: batches.length ? normalCount / batches.length * 100 : 0,
+          reviews: batches.length - normalCount
+        };
+        state.history = batches.slice(0, 5).map(batch => ({
+          id: batch.batchId,
+          slump: Number(batch.measuredSlump),
+          status: batch.caseType === 'qualified' ? 'ok' : 'adjusted',
+          badgeText: batch.status === '待检' ? '待复核' : batch.status
+        }));
+        renderDatasetOverview();
+      } catch (error) {
+        renderDatasetOverview();
+        console.warn('SQLite样例概览加载失败，保留同源静态摘要:', error.message);
+      }
+    }
+
     function updateDateTime() {
       $('datetime').textContent = new Date().toLocaleString('zh-CN', { hour12: false });
     }
@@ -1691,50 +1730,16 @@
     }
 
     function updateHistory(isAdjusted = false) {
-      // 更新批次编号
-      state.batchCounter++;
-      const batchId = `LS-C30-${String(state.batchCounter).padStart(3, '0')}`;
-
-      // 添加到历史记录
-      const slump = state.caseType === 0 ? 184 : 178;  // 合格184，调整后178
-      state.history.unshift({
+      const batchId = state.batchData?.batchId;
+      if (!batchId) return;
+      const nextItem = {
         id: batchId,
-        slump: slump,
-        status: isAdjusted ? 'adjusted' : 'ok'
-      });
-
-      // 只保留最近5条
-      if (state.history.length > 5) state.history.pop();
-
-      // 更新统计
-      state.stats.total++;
-      if (isAdjusted) state.stats.adjustments++;
-      else {
-        // 重新计算合格率
-        const passCount = state.history.filter(h => h.status === 'ok').length;
-        state.stats.passRate = Math.round((state.stats.total - state.stats.adjustments) / state.stats.total * 1000) / 10;
-      }
-
-      // 更新训练样本数
-      const trainSamples = 12847 + state.stats.total;
-      $('trainSamples').textContent = trainSamples.toLocaleString();
-
-      // 更新统计显示
-      $('totalBatches').textContent = state.stats.total;
-      $('passRate').textContent = state.stats.passRate.toFixed(1) + '%';
-      $('adjustCount').textContent = state.stats.adjustments;
-
-      // 更新历史列表
-      const historyList = $('historyList');
-      historyList.innerHTML = state.history.map(item => `
-        <div class="history-row">
-          <span>${item.id}</span>
-          <span>${item.slump}mm</span>
-          <span class="history-badge ${item.status}">${item.status === 'ok' ? '合格' : '调整后合格'}</span>
-        </div>
-      `).join('');
-
-      // 更新批次编号显示
+        slump: Number(state.prediction.slump),
+        status: 'ok',
+        badgeText: isAdjusted ? '调整模拟通过' : '模拟放行'
+      };
+      state.history = [nextItem, ...state.history.filter(item => item.id !== batchId)].slice(0, 5);
+      renderDatasetOverview();
       $('lBatchNo').textContent = batchId;
     }
 
@@ -1751,6 +1756,9 @@
       state.streamTick = 0;
       state.peakDetected = false;
       state.chartData = [];
+      state.batchData = null;
+      state.currentSeries = [];
+      state.agentResult = null;
       state.prediction = { slump: null, spread: null, slumpTime: null, pasteRich: null };
       state.decision = { judgment: null, strategy: null, rootCause: null };
       console.log('State reset complete');
@@ -1769,7 +1777,7 @@
         $(id).className = 'led';
       });
 
-      $('dataSourceCount').textContent = '0/6 演示源';
+      $('dataSourceCount').textContent = '0/6 数据源';
       $('waterCement').textContent = '--';
       $('pasteAgg').textContent = '--';
       $('envTemp').textContent = '--';
@@ -1853,15 +1861,15 @@
 
       // 重置闭环状态
       $('loopStatus').className = 'loop-status';
-      $('loopTitle').textContent = '闭环执行状态';
-      $('loopDetail').textContent = '等待Agent判定后自动执行';
+      $('loopTitle').textContent = '闭环流程模拟状态';
+      $('loopDetail').textContent = '等待Agent判定后生成建议';
 
       // 重置步骤
       updateSteps();
       drawChart();
     }
 
-    function startMonitor() {
+    async function startMonitor() {
       console.log('startMonitor called, monitoring:', state.monitoring);
       if (state.monitoring) return;
 
@@ -1881,6 +1889,19 @@
       state.caseType = state.totalRuns % 2;  // 0=成功, 1=失败
       state.totalRuns++;
 
+      const selectedCase = state.caseType === 0 ? 'qualified' : 'abnormal';
+      try {
+        const response = await fetch(`/api/db/batch?caseType=${selectedCase}`, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const payload = await response.json();
+        state.batchData = payload.batch;
+        state.currentSeries = payload.dbMeta?.currentPoints || [];
+        $('headerBatchNo').textContent = `🏷 ${state.batchData.batchId}`;
+        $('lBatchNo').textContent = state.batchData.batchId;
+      } catch (error) {
+        addLog(`SQLite C30批次加载失败，使用页面降级样例: ${error.message}`, 'warn');
+      }
+
       $('logCaseType').textContent = state.caseType === 0 ? '案例: 合格' : '案例: 不合格';
       $('fixedLogPanel').style.display = 'flex';
 
@@ -1892,7 +1913,7 @@
 
       addLog('监测系统启动', 'success');
       addLog(state.caseType === 0 ? '本批次预期: 合格案例' : '本批次预期: 不合格案例', 'warn');
-      addLog('正在加载预录与合成演示数据...');
+      addLog(state.batchData ? `已加载SQLite C30批次: ${state.batchData.batchId}` : '正在加载页面降级样例...');
 
       setTimeout(() => {
         setLed('ledVideo', 'green');
@@ -1902,17 +1923,17 @@
         setLed('ledWeather', 'green');
         setLed('ledDistance', 'green');
         setLed('ledEquip', 'green');
-        $('dataSourceCount').textContent = '6/6 演示源就绪';
+        $('dataSourceCount').textContent = '6/6 数据源就绪';
 
-        $('waterCement').textContent = '0.42';
-        $('pasteAgg').textContent = '0.38';
-        $('envTemp').textContent = '22';
-        $('transDist').textContent = '12.5';
-        $('mixerEff').textContent = '94';
+        $('waterCement').textContent = state.batchData?.mix?.waterCementRatio ?? '0.41';
+        $('pasteAgg').textContent = state.batchData?.mix?.pasteAggregateRatio ?? '0.34';
+        $('envTemp').textContent = state.batchData?.context?.temperatureC ?? '22';
+        $('transDist').textContent = state.batchData?.context?.transportDistanceKm ?? '12.5';
+        $('mixerEff').textContent = state.batchData?.context?.equipmentEfficiency ?? '正常';
 
         $('visionStatus').textContent = '预录';
-        $('chartStatus').textContent = 'SIM';
-        $('liveBadge').textContent = '● SIM';
+        $('chartStatus').textContent = state.currentSeries.length ? 'SQLITE' : 'SIM';
+        $('liveBadge').textContent = state.currentSeries.length ? '● SQLITE' : '● SIM';
 
         // 启动视频播放
         ['videoMain', 'videoDischarge', 'videoManual'].forEach(id => {
@@ -1920,9 +1941,9 @@
           if (video) video.play().catch(e => console.log('Video play error:', id, e));
         });
 
-        addLog('6类演示数据已加载', 'success');
+        addLog(state.batchData ? '6类C30规则数据已加载' : '6类降级演示数据已加载', 'success');
         addLog('预录视频开始播放');
-        addLog('模拟电流时序已启动');
+        addLog(state.currentSeries.length ? 'SQLite电流时序回放已启动' : '页面模拟电流时序已启动');
 
         state.stage = 2;
         startDataStream();
@@ -1935,15 +1956,22 @@
       state.streamInterval = setInterval(() => {
         state.streamTick++;
 
-        const t = state.streamTick / 20;
-        const base = 62;
-        const peak = Math.exp(-Math.pow((t % 1) - 0.3, 2) / 0.01) * 25;
-        const noise = Math.sin(t * 5) * 2 + Math.random() * 2;
-        state.currentValue = Math.round((base + peak + noise) * 10) / 10;
+        const point = state.currentSeries.length
+          ? state.currentSeries[(state.streamTick - 1) % state.currentSeries.length]
+          : null;
+        if (point) {
+          state.currentValue = Number(point.currentA);
+        } else {
+          const t = state.streamTick / 20;
+          const base = state.caseType === 0 ? 57.5 : 74;
+          const noise = Math.sin(t * 5) * 0.4 + Math.random() * 0.3;
+          state.currentValue = Math.round((base + noise) * 10) / 10;
+        }
 
         $('liveCurrent').textContent = state.currentValue.toFixed(1);
-        $('currentStatus').textContent = state.currentValue > 70 ? '偏高' : '正常';
-        $('currentStatus').className = 'value-status ' + (state.currentValue > 70 ? 'warn' : 'ok');
+        const currentState = state.currentValue > 60 ? '偏高' : state.currentValue < 55 ? '偏低' : '正常';
+        $('currentStatus').textContent = currentState;
+        $('currentStatus').className = 'value-status ' + (currentState === '正常' ? 'ok' : 'warn');
         $('frameNo').textContent = '#' + String(state.streamTick).padStart(5, '0');
         $('statusDot').className = 'status-dot online';
         $('statusText').textContent = '演示中';
@@ -1957,9 +1985,9 @@
         drawChart();
 
         // 电流峰值自动触发视频抓拍 - 缩短时间
-        if (state.currentValue > 75 && !state.peakDetected && state.stage === 2 && state.streamTick > 30) {
+        if (!state.peakDetected && state.stage === 2 && state.streamTick >= 40) {
           state.peakDetected = true;
-          addLog('⚡ 演示逻辑：电流峰值触发视频分析', 'warn');
+          addLog(state.currentValue > 70 ? '⚡ 高电流触发视频联合分析' : '⚡ 稳态窗口完成，触发视频联合分析', 'warn');
           triggerAnalysis();
         }
 
@@ -2075,12 +2103,29 @@
     function triggerAnalysis() {
       addLog('模拟视觉特征开始分析预录关键帧...');
 
-      $('stableAmp').textContent = state.caseType === 0 ? '62' : '58';
-      $('stableTime').textContent = state.caseType === 0 ? '88' : '95';
+      $('stableAmp').textContent = state.batchData?.current?.avgA ?? (state.caseType === 0 ? '57.5' : '74');
+      $('stableTime').textContent = state.batchData?.current?.stableAfterSec ?? (state.caseType === 0 ? '90' : '130');
 
       // 根据案例类型设置不同的视觉特征
       let visualFeatures;
-      if (state.caseType === 0) {
+      if (state.batchData?.visual) {
+        const visual = state.batchData.visual;
+        const uniformity = Number(visual.uniformityScore);
+        const uniformityStatus = uniformity >= 80 ? 'ok' : uniformity >= 70 ? 'warn' : 'error';
+        const segregationStatus = visual.segregation === '无' ? 'ok' : visual.segregation === '轻微' ? 'warn' : 'error';
+        const lumpStatus = String(visual.lumps).includes('无明显') ? 'ok' : 'error';
+        const dryWetStatus = visual.dryWetState === '适中' ? 'ok' : 'error';
+        const flowStatus = ['正常', '良好'].includes(visual.flowability) ? 'ok' : ['偏弱', '偏强'].includes(visual.flowability) ? 'warn' : 'error';
+        const wallStatus = ['无', '轻微'].includes(visual.wallAdhesion) ? 'ok' : 'warn';
+        visualFeatures = {
+          uniformity: { value: `${uniformity}%`, binary: uniformity >= 80 ? '1=均匀' : '0=需关注', status: uniformityStatus },
+          segregation: { value: visual.segregation === '无' ? '未检出' : visual.segregation, binary: visual.segregation === '无' ? '0=否' : '1=是', status: segregationStatus },
+          lump: { value: visual.lumps, binary: lumpStatus === 'ok' ? '0=否' : '1=是', status: lumpStatus },
+          dryWet: { value: visual.dryWetState, deviation: visual.dryWetState === '适中' ? '0%' : '规则越界', status: dryWetStatus },
+          flow: { value: visual.flowability, grade: visual.flowability, status: flowStatus },
+          wall: { value: visual.wallAdhesion, binary: wallStatus === 'ok' ? '0=正常' : '1=异常', status: wallStatus }
+        };
+      } else if (state.caseType === 0) {
         // 成功案例
         visualFeatures = {
           uniformity: { value: '88%', binary: '1=均匀', status: 'ok' },
@@ -2153,11 +2198,19 @@
       const isWinter = state.envTemp <= 10;
       const stableThreshold = isWinter ? '120-150s' : '90s';
 
+      const dbCurrent = state.batchData?.current;
+      const currentValues = state.currentSeries.map(point => Number(point.currentA)).filter(Number.isFinite);
+      const avgCurrent = Number(dbCurrent?.avgA ?? (state.caseType === 0 ? 57.5 : 74));
+      const peakCurrent = Number(dbCurrent?.peakA ?? Math.max(...currentValues, avgCurrent));
+      const valleyCurrent = currentValues.length ? Math.min(...currentValues) : avgCurrent - 0.5;
+      const waveCurrent = currentValues.length ? peakCurrent - valleyCurrent : (state.caseType === 0 ? 0.8 : 1.6);
+      const currentOk = avgCurrent >= 55 && avgCurrent <= 60;
+      const stableSeconds = Number(dbCurrent?.stableAfterSec ?? (state.caseType === 0 ? 90 : 130));
       const currentFeatures = {
-        stable: { amp: state.caseType === 0 ? '62A' : '58A', duration: '12s', threshold: '60-65A', status: state.caseType === 0 ? 'ok' : 'warn' },
-        peak: { peak: state.caseType === 0 ? '85A' : '78A', valley: '48A', trigger: '已触发', status: 'ok' },
-        delay: { time: state.caseType === 0 ? '88s' : '95s', threshold: stableThreshold, overtime: '否', status: 'ok' },
-        trend: { wave: state.caseType === 0 ? '8A' : '15A', direction: state.caseType === 0 ? '平稳' : '波动', stability: state.caseType === 0 ? '稳定' : '不稳定', status: state.caseType === 0 ? 'ok' : 'warn' }
+        stable: { amp: `${avgCurrent.toFixed(1)}A`, duration: '过滤稳态段', threshold: '55-60A', status: currentOk ? 'ok' : 'warn' },
+        peak: { peak: `${peakCurrent.toFixed(1)}A`, valley: `${valleyCurrent.toFixed(1)}A`, trigger: '已采集', status: currentOk ? 'ok' : 'warn' },
+        delay: { time: `${stableSeconds}s`, threshold: stableThreshold, overtime: stableSeconds > 120 ? '是' : '否', status: stableSeconds > 120 ? 'warn' : 'ok' },
+        trend: { wave: `${waveCurrent.toFixed(1)}A`, direction: dbCurrent?.trend || (currentOk ? '平稳' : '波动'), stability: currentOk ? '稳定' : '需关注', status: currentOk ? 'ok' : 'warn' }
       };
 
       // 更新电流特征面板
@@ -2170,14 +2223,14 @@
       $('cPeakVal').textContent = currentFeatures.peak.peak;
       $('cValleyVal').textContent = currentFeatures.peak.valley;
       $('cPeakTrigger').textContent = currentFeatures.peak.trigger;
-      $('cPeakBadge').textContent = '合格';
-      $('cPeakBadge').className = 'feature-badge ok';
+      $('cPeakBadge').textContent = currentFeatures.peak.status === 'ok' ? '合格' : '异常';
+      $('cPeakBadge').className = 'feature-badge ' + currentFeatures.peak.status;
 
       $('cDelayVal').textContent = currentFeatures.delay.time;
       $('cDelayThresh').textContent = currentFeatures.delay.threshold;
       $('cDelayOver').textContent = currentFeatures.delay.overtime;
-      $('cDelayBadge').textContent = '合格';
-      $('cDelayBadge').className = 'feature-badge ok';
+      $('cDelayBadge').textContent = currentFeatures.delay.status === 'ok' ? '合格' : '超时';
+      $('cDelayBadge').className = 'feature-badge ' + currentFeatures.delay.status;
 
       $('cWaveVal').textContent = currentFeatures.trend.wave;
       $('cTrendDir').textContent = currentFeatures.trend.direction;
@@ -2189,75 +2242,75 @@
       $('agentState').textContent = '分析中...';
     }
 
-    function runAgentDecision() {
+    async function runAgentDecision() {
       state.stage = 3;
-      addLog('演示决策模块开始研判...');
+      addLog('本地Agent开始研判C30批次...');
 
-      if (state.caseType === 0) {
-        // 成功案例
-        state.prediction = { slump: 184, spread: 468, slumpTime: 5.2, pasteRich: 18.5 };
+      try {
+        if (!state.batchData?.batchId) throw new Error('未加载SQLite批次');
+        const response = await fetch('/api/run-agent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ batchId: state.batchData.batchId })
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const payload = await response.json();
+        state.agentResult = payload.result;
+      } catch (error) {
+        addLog(`Agent接口不可用，使用页面规则降级: ${error.message}`, 'warn');
+        state.agentResult = null;
+      }
 
-        $('predictSlump').textContent = '184';
-        $('predictSpread').textContent = '468';
-        $('predictSlumpTime').textContent = '5.2';
-        $('predictPasteRich').textContent = '18.5';
+      const prediction = state.agentResult?.predictions || (state.caseType === 0
+        ? { slump: 180, spread: 550, slumpTime: 3.5, pasteRichness: 18.2 }
+        : { slump: 130, spread: 470, slumpTime: 6.3, pasteRichness: 13.5 });
+      const decision = state.agentResult?.decision || {
+        qualityJudgement: state.caseType === 0 ? '合格' : '异常待确认',
+        rootCause: state.caseType === 0 ? 'C30五项规则均在正常区间。' : 'C30工作性指标超出正常区间，需要人工复核。',
+        actionSuggestion: state.caseType === 0 ? '建议质检员复核后放行。' : '按现场规则调整并复测。'
+      };
+      const qualified = decision.qualityJudgement === '合格';
+      state.prediction = {
+        slump: prediction.slump,
+        spread: prediction.spread,
+        slumpTime: prediction.slumpTime,
+        pasteRich: prediction.pasteRichness
+      };
+      state.decision = {
+        judgment: decision.qualityJudgement,
+        strategy: qualified ? '建议放行' : '需人工确认调整',
+        rootCause: decision.rootCause
+      };
 
-        state.decision = {
-          judgment: '合格',
-          strategy: '建议放行',
-          rootCause: '电流稳定(62A)、视觉正常(均匀度88%)、配比执行准确(水灰比0.42)，四项指标均在目标范围内。'
-        };
+      $('predictSlump').textContent = state.prediction.slump;
+      $('predictSpread').textContent = state.prediction.spread;
+      $('predictSlumpTime').textContent = state.prediction.slumpTime;
+      $('predictPasteRich').textContent = state.prediction.pasteRich;
+      $('judgeResult').textContent = qualified ? '合格' : '异常待确认';
+      $('judgeResult').className = 'decision-result ' + (qualified ? 'ok' : 'error');
+      $('judgeReason').textContent = `坍落度${state.prediction.slump}mm、扩展度${state.prediction.spread}mm、倒坍时间${state.prediction.slumpTime}s、浆体富裕度${state.prediction.pasteRich}%`;
+      $('strategy').textContent = state.decision.strategy;
+      $('strategy').className = 'decision-result ' + (qualified ? 'ok' : 'warn');
+      $('strategyDetail').textContent = decision.actionSuggestion;
+      $('rootCause').textContent = state.decision.rootCause;
+      $('decisionBox').classList.add(qualified ? 'judged' : 'error');
+      $('glmStatus').textContent = qualified ? '已判定' : '异常';
+      $('agentState').textContent = qualified ? '研判完成' : '等待人工确认';
 
-        $('judgeResult').textContent = '合格';
-        $('judgeResult').className = 'decision-result ok';
-        $('judgeReason').textContent = '坍落度184mm、扩展度468mm、倒坍时间5.2s、浆体富裕度18.5%';
-        $('strategy').textContent = '建议放行';
-        $('strategy').className = 'decision-result ok';
-        $('strategyDetail').textContent = '终止搅拌 → 执行出料 → 全参数归档';
-        $('rootCause').textContent = state.decision.rootCause;
+      addLog(`Agent判定结果: ${decision.qualityJudgement}`, qualified ? 'success' : 'error');
+      updateLedger();
+      updateSteps();
 
-        $('decisionBox').classList.add('judged');
-        $('glmStatus').textContent = '已判定';
-        $('agentState').textContent = '研判完成';
-
-        addLog('Agent判定结果: 合格', 'success');
-        updateLedger();
-        updateSteps();
-
+      if (qualified) {
         setTimeout(() => executeClosedLoop(), 500);
-
       } else {
-        // 失败案例
-        state.prediction = { slump: 128, spread: 352, slumpTime: 8.5, pasteRich: 12.3 };
-
-        $('predictSlump').textContent = '128';
-        $('predictSpread').textContent = '352';
-        $('predictSlumpTime').textContent = '8.5';
-        $('predictPasteRich').textContent = '12.3';
-
-        state.decision = {
-          judgment: '不合格',
-          strategy: '需人工确认调整',
-          rootCause: '坍落度偏低(128mm < 160mm)、扩展度不足(352mm < 400mm)、视觉检测浆体偏干均匀度仅62%。'
-        };
-
-        $('judgeResult').textContent = '不合格';
-        $('judgeResult').className = 'decision-result error';
-        $('judgeReason').textContent = '坍落度128mm(偏低)、扩展度352mm(偏低)、倒坍时间8.5s(偏长)';
-        $('strategy').textContent = '需人工确认';
-        $('strategy').className = 'decision-result warn';
-        $('strategyDetail').textContent = '等待人工确认后执行自动调整';
-        $('rootCause').textContent = state.decision.rootCause;
-
-        $('decisionBox').classList.add('error');
-        $('glmStatus').textContent = '异常';
-        $('agentState').textContent = '等待人工确认';
-
-        addLog('Agent判定结果: 不合格', 'error');
-        updateLedger();
-        updateSteps();
-
-        // 显示弹窗
+        $('failReasons').innerHTML = `
+          <div class="modal-reason-title">不合格指标：</div>
+          <div class="modal-reason-item">坍落度: ${state.prediction.slump}mm（目标160-200mm）</div>
+          <div class="modal-reason-item">扩展度: ${state.prediction.spread}mm（目标530-570mm）</div>
+          <div class="modal-reason-item">倒坍时间: ${state.prediction.slumpTime}s（目标2.5-4.5s）</div>
+        `;
+        $('failSuggestion').textContent = `💡 系统建议：${state.batchData?.dispositionAction || decision.actionSuggestion}`;
         setTimeout(() => {
           $('failModal').classList.add('show');
           addLog('弹窗显示: 等待人工确认调整方案', 'warn');
@@ -2268,16 +2321,16 @@
     function confirmAdjust() {
       $('failModal').classList.remove('show');
       addLog('人工确认调整方案', 'success');
-      addLog('开始执行自动调整: 延长搅拌30秒 + 补水2L', 'warn');
+      const suggestedAction = state.batchData?.dispositionAction || '按C30规则调整并复测';
+      addLog(`开始执行调整效果模拟: ${suggestedAction}`, 'warn');
 
       $('loopStatus').className = 'loop-status adjusting';
-      $('loopTitle').textContent = '自动调整中';
-      $('loopDetail').textContent = '延长搅拌30秒 + 补水2L...';
+      $('loopTitle').textContent = '调整效果模拟中';
+      $('loopDetail').textContent = suggestedAction;
 
       // 模拟调整过程
       setTimeout(() => {
-        addLog('延长搅拌完成');
-        addLog('补水量: 2L');
+        addLog('规则处置步骤模拟完成');
       }, 1000);
 
       setTimeout(() => {
@@ -2288,20 +2341,20 @@
       setTimeout(() => {
         // 调整后的新数据
         state.stage = 3;  // 设置为研判完成状态，允许确认放行
-        state.prediction = { slump: 178, spread: 445, slumpTime: 5.8, pasteRich: 17.2 };
+        state.prediction = { slump: 178, spread: 548, slumpTime: 3.8, pasteRich: 17.2 };
 
         $('predictSlump').textContent = '178';
-        $('predictSpread').textContent = '445';
-        $('predictSlumpTime').textContent = '5.8';
+        $('predictSpread').textContent = '548';
+        $('predictSlumpTime').textContent = '3.8';
         $('predictPasteRich').textContent = '17.2';
 
         $('judgeResult').textContent = '合格';
         $('judgeResult').className = 'decision-result ok';
-        $('judgeReason').textContent = '调整后: 坍落度178mm、扩展度445mm、倒坍时间5.8s';
+        $('judgeReason').textContent = '调整后: 坍落度178mm、扩展度548mm、倒坍时间3.8s';
         $('strategy').textContent = '建议放行';
         $('strategy').className = 'decision-result ok';
         $('strategyDetail').textContent = '终止搅拌 → 执行出料 → 全参数归档';
-        $('rootCause').textContent = '经自动调整后，四项指标均已达到目标范围。';
+        $('rootCause').textContent = '调整效果模拟后，四项指标均回到目标范围。';
 
         $('decisionBox').className = 'decision-box judged';
         $('glmStatus').textContent = '已判定';
@@ -2309,8 +2362,8 @@
 
         // 更新台账
         $('lSlump').textContent = '178mm (调整后合格)';
-        $('lSpread').textContent = '445mm (调整后合格)';
-        $('lSlumpTime').textContent = '5.8s (合格)';
+        $('lSpread').textContent = '548mm (调整后合格)';
+        $('lSlumpTime').textContent = '3.8s (合格)';
         $('lPasteRich').textContent = '17.2% (合格)';
         $('lAgentJudge').textContent = '合格(调整后)';
         $('lStrategy').textContent = '建议放行';
@@ -2338,43 +2391,26 @@
 
       $('lTime').textContent = now;
 
-      if (state.caseType === 0) {
-        // 成功案例
-        $('lUniformity').textContent = '88% (合格)';
-        $('lSegregation').textContent = '未检出 (合格)';
-        $('lLump').textContent = '未检出 (合格)';
-        $('lFlow').textContent = '82% (良好)';
-        $('lStableAmp').textContent = '62A';
-        $('lStableTime').textContent = '88s';
-        $('lWave').textContent = '8A';
-        $('lWaterCement').textContent = '0.42';
-        $('lPasteAgg').textContent = '0.38';
-        $('lRatioDev').textContent = '0% (准确)';
-        $('lSlump').textContent = '184mm (合格)';
-        $('lSpread').textContent = '468mm (合格)';
-        $('lSlumpTime').textContent = '5.2s (合格)';
-        $('lPasteRich').textContent = '18.5% (合格)';
-        $('lAgentJudge').textContent = '合格';
-        $('lStrategy').textContent = '建议放行';
-      } else {
-        // 失败案例
-        $('lUniformity').textContent = '62% (异常)';
-        $('lSegregation').textContent = '轻微离析 (异常)';
-        $('lLump').textContent = '未检出 (合格)';
-        $('lFlow').textContent = '58% (较差)';
-        $('lStableAmp').textContent = '58A';
-        $('lStableTime').textContent = '95s';
-        $('lWave').textContent = '15A';
-        $('lWaterCement').textContent = '0.42';
-        $('lPasteAgg').textContent = '0.38';
-        $('lRatioDev').textContent = '0% (准确)';
-        $('lSlump').textContent = '128mm (偏低)';
-        $('lSpread').textContent = '352mm (偏低)';
-        $('lSlumpTime').textContent = '8.5s (偏长)';
-        $('lPasteRich').textContent = '12.3% (偏低)';
-        $('lAgentJudge').textContent = '不合格';
-        $('lStrategy').textContent = '需调整';
-      }
+      const batch = state.batchData;
+      const qualified = state.decision.judgment === '合格';
+      const currentValues = state.currentSeries.map(point => Number(point.currentA)).filter(Number.isFinite);
+      const wave = currentValues.length ? Math.max(...currentValues) - Math.min(...currentValues) : 0;
+      $('lUniformity').textContent = `${batch?.visual?.uniformityScore ?? (qualified ? 88 : 62)}% (${qualified ? '合格' : '需关注'})`;
+      $('lSegregation').textContent = `${batch?.visual?.segregation ?? (qualified ? '无' : '明显')} (${qualified ? '合格' : '异常'})`;
+      $('lLump').textContent = `${batch?.visual?.lumps ?? (qualified ? '无明显结团' : '局部结团')}`;
+      $('lFlow').textContent = `${batch?.visual?.flowability ?? (qualified ? '正常' : '偏弱')}`;
+      $('lStableAmp').textContent = `${batch?.current?.avgA ?? (qualified ? 57.5 : 74)}A`;
+      $('lStableTime').textContent = `${batch?.current?.stableAfterSec ?? (qualified ? 90 : 130)}s`;
+      $('lWave').textContent = `${wave.toFixed(1)}A`;
+      $('lWaterCement').textContent = batch?.mix?.waterCementRatio ?? '0.41';
+      $('lPasteAgg').textContent = batch?.mix?.pasteAggregateRatio ?? '0.34';
+      $('lRatioDev').textContent = batch?.mix?.executionDeviation ?? '无明显偏差';
+      $('lSlump').textContent = `${state.prediction.slump}mm (${qualified ? '合格' : '异常'})`;
+      $('lSpread').textContent = `${state.prediction.spread}mm (${qualified ? '合格' : '异常'})`;
+      $('lSlumpTime').textContent = `${state.prediction.slumpTime}s (${qualified ? '合格' : '异常'})`;
+      $('lPasteRich').textContent = `${state.prediction.pasteRich}% (${qualified ? '合格' : '需关注'})`;
+      $('lAgentJudge').textContent = state.decision.judgment;
+      $('lStrategy').textContent = state.decision.strategy;
 
       $('lHumanConfirm').textContent = '待确认';
       $('lReleaseTime').textContent = '--';
@@ -2384,19 +2420,19 @@
 
     function executeClosedLoop() {
       $('loopStatus').className = 'loop-status executing';
-      $('loopTitle').textContent = '闭环执行中';
-      $('loopDetail').textContent = '正在执行自动放行流程...';
+      $('loopTitle').textContent = '闭环流程模拟中';
+      $('loopDetail').textContent = '正在演示建议动作与归档流程...';
 
-      addLog('开始执行闭环流程...', 'warn');
+      addLog('开始闭环流程模拟...', 'warn');
 
       const steps = [
-        { delay: 300, text: '发送终止搅拌指令...', type: '' },
-        { delay: 600, text: '搅拌已停止', type: 'success' },
-        { delay: 900, text: '发送出料指令...', type: '' },
-        { delay: 1200, text: '出料闸门已开启', type: 'success' },
-        { delay: 1500, text: '参数归档中...', type: '' },
-        { delay: 1800, text: '质量台账已归档', type: 'success' },
-        { delay: 2100, text: '闭环执行完成，等待人工确认放行', type: 'success' }
+        { delay: 300, text: '模拟生成终止搅拌建议...', type: '' },
+        { delay: 600, text: '建议步骤已记录', type: 'success' },
+        { delay: 900, text: '模拟生成出料建议...', type: '' },
+        { delay: 1200, text: '出料建议已记录', type: 'success' },
+        { delay: 1500, text: '演示台账归档中...', type: '' },
+        { delay: 1800, text: '演示台账已归档', type: 'success' },
+        { delay: 2100, text: '闭环模拟完成，等待人工确认', type: 'success' }
       ];
 
       steps.forEach(step => {
@@ -2405,15 +2441,15 @@
 
       setTimeout(() => {
         $('loopStatus').className = 'loop-status success';
-        $('loopTitle').textContent = '闭环执行完成';
-        $('loopDetail').textContent = '已完成: 终止搅拌 → 出料 → 归档';
+        $('loopTitle').textContent = '闭环流程模拟完成';
+        $('loopDetail').textContent = '已演示: 停止搅拌建议 → 出料建议 → 台账归档';
       }, 2100);
     }
 
     function approve() {
       if (state.stage < 3) return;
 
-      addLog('质检员确认放行', 'success');
+      addLog('质检员确认本次模拟放行', 'success');
 
       // 更新历史数据 - 检查是否是调整后的批次
       const wasAdjusted = state.caseType === 1 && state.prediction.slump === 178;
@@ -2422,15 +2458,15 @@
       state.stage = 4;
       state.monitoring = false;  // 重置监测状态，允许下一轮启动
       updateSteps();
-      $('statusText').textContent = '已放行';
+      $('statusText').textContent = '模拟放行';
       $('lHumanConfirm').textContent = '已确认';
       $('lReleaseTime').textContent = new Date().toLocaleTimeString('zh-CN', { hour12: false });
 
       $('loopStatus').className = 'loop-status success';
-      $('loopTitle').textContent = '放行确认完成';
-      $('loopDetail').textContent = '质检员已确认，出料完成';
+      $('loopTitle').textContent = '模拟放行确认完成';
+      $('loopDetail').textContent = '质检员已确认本次演示结果';
 
-      addLog('🎉 本批次放行完成，流程结束', 'success');
+      addLog('🎉 本批次模拟放行完成，流程结束', 'success');
 
       // 3秒后自动开始下一轮
       const nextCase = state.totalRuns % 2 === 0 ? '合格' : '不合格';

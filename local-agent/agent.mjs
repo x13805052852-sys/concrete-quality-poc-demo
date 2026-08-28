@@ -27,14 +27,14 @@ const mpNum = (section, key, def) => {
 };
 
 const TARGETS = {
-  slump: { min: 160, max: 210, unit: "mm", label: "坍落度" },
-  spread: { min: 400, max: 550, unit: "mm", label: "扩展度" },
-  slumpTime: { min: 3, max: 8, unit: "s", label: "倒坍时间" },
+  slump: { min: 160, max: 200, unit: "mm", label: "坍落度" },
+  spread: { min: 530, max: 570, unit: "mm", label: "扩展度" },
+  slumpTime: { min: 2.5, max: 4.5, unit: "s", label: "倒坍时间" },
   pasteRichness: { min: 15, max: null, unit: "%", label: "浆体富裕度" }
 };
 
 // 电流基准值：从 model-params.json 读取（标定方法见该文件注释）
-const CURRENT_BASELINE_A = mpNum("currentBaselineA", "value", 42);
+const CURRENT_BASELINE_A = mpNum("currentBaselineA", "value", 57.5);
 
 // GLM 质量研判节点配置
 // 真实调用智谱 GLM-4.5 / GLM-4 API；未配置 GLM_API_KEY 或调用失败时降级到规则研判，
@@ -119,67 +119,51 @@ function evaluateRange(metric, value, targets = TARGETS) {
   };
 }
 
-// 坍落度/扩展度/倒坍时间/浆体富裕度预测
-// 系数从 model-params.json 加载（每个系数的物理含义和标定方法见该文件注释）
-// 生产环境：用 calibrate.py 拟合历史数据后覆盖 model-params.json，无需改代码
-function derivePredictions(batch) {
-  // 特征安全提取：任一数据源缺失时用中性默认值，保证预测不崩（chaos 测试覆盖）
-  const peakA = Number(batch.current?.peakA) || 0;
-  const uniformityScore = Number(batch.visual?.uniformityScore) || 75;
+function inferC30RuleBand(batch, currentA) {
+  const dryWetState = batch.visual?.dryWetState || "适中";
   const segregation = batch.visual?.segregation || "无";
-  const temperatureC = Number(batch.context?.temperatureC) || 20;
-  const transportDistanceKm = Number(batch.context?.transportDistanceKm) || 0;
-  const waterCementRatio = Number(batch.mix?.waterCementRatio) || 0.42;
+  const lumps = batch.visual?.lumps || "无明显结团";
+  if (dryWetState === "偏干") {
+    return currentA >= 70 || lumps === "大面积结团" ? "DRY_SEVERE" : "DRY_MILD";
+  }
+  if (dryWetState === "偏稀") {
+    return currentA <= 50 && segregation === "明显" ? "WET_SEVERE" : "WET_MILD";
+  }
+  if (currentA >= 70) return "DRY_SEVERE";
+  if (currentA > 60) return "DRY_MILD";
+  if (currentA < 50 && segregation === "明显") return "WET_SEVERE";
+  if (currentA < 55) return "WET_MILD";
+  return "NORMAL";
+}
 
-  const currentDelta = peakA > 0 ? peakA - CURRENT_BASELINE_A : 0;
+function interpolateBand(band, currentA, minOutputKey, maxOutputKey) {
+  const currentMin = Number(band.currentMin);
+  const currentMax = Number(band.currentMax);
+  const clampedCurrent = Math.max(currentMin, Math.min(currentMax, currentA));
+  const ratio = currentMax === currentMin ? 0 : (clampedCurrent - currentMin) / (currentMax - currentMin);
+  return Number(band[minOutputKey]) + ratio * (Number(band[maxOutputKey]) - Number(band[minOutputKey]));
+}
 
-  // 各项惩罚量（基于模型参数计算）
-  const visualDryPenalty = Math.max(0, 75 - uniformityScore) * mpNum("slump", "visualDryPenaltyCoef", 0.5);
-  const segregationMap = mpVal("slump", "segregationPenalty") || { "明显": 12, "轻微": 6, "无": 0 };
-  const segregationPenalty = segregationMap[segregation] ?? 0;
-  const temperaturePenalty = temperatureC <= 10 ? mpNum("slump", "temperaturePenalty", 5) : 0;
-  const distancePenalty = Math.max(0, transportDistanceKm - 20) * mpNum("slump", "distancePenaltyCoef", 0.3);
-  const waterCementAdjustment = (waterCementRatio - 0.42) * mpNum("slump", "waterCementAdjustmentCoef", 250);
-
-  // 坍落度 = 基准 - currentDelta*系数 - 视觉惩罚 - 离析惩罚 - 温度惩罚 - 运距惩罚 + 水灰比调整
-  const slump = round(
-    mpNum("slump", "base", 188)
-    - currentDelta * mpNum("slump", "currentDeltaCoef", 4)
-    - visualDryPenalty
-    - segregationPenalty
-    - temperaturePenalty
-    - distancePenalty
-    + waterCementAdjustment,
-    0
-  );
-
-  // 扩展度 = 基准 - currentDelta*系数 - 视觉惩罚*放大 - 离析惩罚*放大 - 运距惩罚*放大 + 水灰比调整*放大
-  const spread = round(
-    mpNum("spread", "base", 470)
-    - currentDelta * mpNum("spread", "currentDeltaCoef", 11.5)
-    - visualDryPenalty * mpNum("spread", "visualDryPenaltyCoef", 1.4)
-    - segregationPenalty * mpNum("spread", "segregationPenaltyCoef", 1.3)
-    - distancePenalty * mpNum("spread", "distancePenaltyCoef", 1.2)
-    + waterCementAdjustment * mpNum("spread", "waterCementAdjustmentCoef", 1.4),
-    0
-  );
-
-  // 倒坍时间 = 基准 + currentDelta*系数 + 干湿惩罚 + 低温惩罚
-  const dryWetState = batch.visual?.dryWetState || "正常";
+// C30 规则插值预测：先用视频干湿/离析/结团状态识别五档工况，再按电流位置插值。
+// 这是 POC 的可解释规则基线；后续有可用历史数据时再用 calibrate.py 替换为标定模型。
+function derivePredictions(batch) {
+  const peakA = Number(batch.current?.peakA) || CURRENT_BASELINE_A;
+  const bandCode = inferC30RuleBand(batch, peakA);
+  const band = MP?.c30RuleBands?.[bandCode] || MP?.c30RuleBands?.NORMAL || {
+    currentMin: 55, currentMax: 60,
+    slumpAtMin: 200, slumpAtMax: 160,
+    spreadAtMin: 570, spreadAtMax: 530,
+    timeAtMin: 2.5, timeAtMax: 4.5,
+  };
+  const currentDelta = peakA - CURRENT_BASELINE_A;
+  const slump = round(interpolateBand(band, peakA, "slumpAtMin", "slumpAtMax"), 0);
+  const spread = round(interpolateBand(band, peakA, "spreadAtMin", "spreadAtMax"), 0);
+  const slumpTime = round(interpolateBand(band, peakA, "timeAtMin", "timeAtMax"), 1);
   const wallAdhesion = batch.visual?.wallAdhesion || "无";
   const flowability = batch.visual?.flowability || "良好";
-  const slumpTime = round(
-    mpNum("slumpTime", "base", 5.2)
-    + currentDelta * mpNum("slumpTime", "currentDeltaCoef", 0.18)
-    + (dryWetState === "偏干" ? mpNum("slumpTime", "dryWetPenalty", 1.2) : 0)
-    + (temperatureC <= 10 ? mpNum("slumpTime", "lowTempPenalty", 0.5) : 0),
-    1
-  );
-
-  // 浆体富裕度 = 基准 - currentDelta*系数 - 挂壁惩罚 - 流动性惩罚
   const pasteRichness = round(
     mpNum("pasteRichness", "base", 18.2)
-    - currentDelta * mpNum("pasteRichness", "currentDeltaCoef", 0.4)
+    - currentDelta * mpNum("pasteRichness", "currentDeltaCoef", 0.1)
     - (wallAdhesion === "明显" ? mpNum("pasteRichness", "wallAdhesionPenalty", 1.8) : 0)
     - (flowability === "弱" ? mpNum("pasteRichness", "flowabilityPenalty", 1.4) : 0),
     1
@@ -191,6 +175,7 @@ function derivePredictions(batch) {
     slumpTime,
     pasteRichness,
     currentDeltaA: round(currentDelta, 1),
+    ruleBand: bandCode,
     // 附带模型版本信息（生产环境用于追踪用的是哪版标定参数）
     modelVersion: MP?._meta?.version || "builtin-default",
     modelCalibratedAt: MP?._meta?.calibratedAt || null
@@ -207,6 +192,18 @@ function ruleNode(batch, predictions, targets = TARGETS) {
   const flowability = v.flowability || "良好";
   const stableAfterSec = Number(c.stableAfterSec) || 0;
   const trend = c.trend || "未知";
+  const hasValue = (value) => value !== null && value !== undefined && value !== "";
+  const missingDataSources = [];
+  if (![v.uniformityScore, v.segregation, v.lumps, v.dryWetState, v.flowability].some(hasValue)) {
+    missingDataSources.push("视觉特征");
+  }
+  if (![c.peakA, c.avgA, c.stableAfterSec, c.trend].some(hasValue)) {
+    missingDataSources.push("电流特征");
+  }
+  const mix = batch.mix || {};
+  if (![mix.waterCementRatio, mix.pasteAggregateRatio, mix.executionDeviation].some(hasValue)) {
+    missingDataSources.push("配比特征");
+  }
 
   const rangeChecks = [
     evaluateRange("slump", predictions.slump, targets),
@@ -240,7 +237,8 @@ function ruleNode(batch, predictions, targets = TARGETS) {
   const hardRisks = [
     ...failedMetrics.map((item) => item.message),
     ...visualChecks.filter((item) => item.includes("偏低") || item.includes("明显") || item.includes("偏干") || item.includes("弱")),
-    ...currentChecks.filter((item) => item.includes("升高") || item.includes("偏长"))
+    ...currentChecks.filter((item) => item.includes("升高") || item.includes("偏长")),
+    ...(missingDataSources.length ? [`关键数据源缺失：${missingDataSources.join("、")}`] : [])
   ];
 
   const riskScore = failedMetrics.length * 25
@@ -248,7 +246,8 @@ function ruleNode(batch, predictions, targets = TARGETS) {
     + (segregation === "明显" ? 18 : segregation === "轻微" ? 8 : 0)
     + (dryWetState === "偏干" ? 12 : 0)
     + (predictions.currentDeltaA >= 5 ? 15 : 0)
-    + (stableAfterSec > 120 ? 10 : 0);
+    + (stableAfterSec > 120 ? 10 : 0)
+    + (missingDataSources.length ? 70 : 0);
 
   const riskLevel = riskScore >= 70 ? "高" : riskScore >= 35 ? "中" : "低";
 
@@ -258,6 +257,10 @@ function ruleNode(batch, predictions, targets = TARGETS) {
     rangeChecks,
     visualChecks,
     currentChecks,
+    dataQuality: {
+      status: missingDataSources.length ? "insufficient" : "complete",
+      missingDataSources
+    },
     hardRisks,
     riskScore,
     riskLevel
@@ -287,7 +290,9 @@ function ruleBasedDecision(batch, predictions, rules) {
 
   // 规则降级时按特征优先级推断根因类别（与 prompt 里 6 类定义对齐）
   let rootCauseCategory = "mix_deviation"; // 默认配比偏差
-  if (batch.context?.materialStatus && batch.context.materialStatus !== "正常") {
+  if (rules.dataQuality?.status === "insufficient") {
+    rootCauseCategory = "data_insufficient";
+  } else if (batch.context?.materialStatus && batch.context.materialStatus !== "正常") {
     rootCauseCategory = "material_abnormal";
   } else if (batch.visual?.lumps && ["局部结团", "大面积结团"].includes(batch.visual.lumps)) {
     rootCauseCategory = "lump_tight";
@@ -301,6 +306,9 @@ function ruleBasedDecision(batch, predictions, rules) {
 
   const possibleCauses = [];
   const targets = rules.targetRules || TARGETS;
+  if (rules.dataQuality?.status === "insufficient") {
+    possibleCauses.push(`关键质量数据不足（${rules.dataQuality.missingDataSources.join("、")}），禁止按默认值放行`);
+  }
   if (predictions.slump < targets.slump.min || predictions.spread < targets.spread.min) {
     possibleCauses.push("工作性不足，可能与浆体偏干、峰值电流升高或配比执行偏差有关");
   }
@@ -317,16 +325,18 @@ function ruleBasedDecision(batch, predictions, rules) {
     keyEvidence: rules.hardRisks,
     rootCause: possibleCauses.join("；") || "指标存在边界风险，需结合现场质检复核。",
     rootCauseCategory,
-    actionSuggestion: "建议进入人工确认：优先延长搅拌30秒，必要时按现场授权补水2L并重新研判；若复核仍不合格，则暂停出料并转人工处理。",
+    actionSuggestion: rules.dataQuality?.status === "insufficient"
+      ? "暂停放行建议，补齐缺失数据源并重新研判；无法恢复时转人工质检。"
+      : "建议进入人工确认：按当前 C30 工况规则执行授权处置并复测；若复核仍不合格，则暂停出料并转人工处理。",
     requireHumanConfirm: true
   };
 }
 
 // 构造给 GLM 的 user 输入：把批次、预测、规则结果结构化为一段可读的研判输入。
 function buildGlmUserInput(batch, predictions, rules, targets = TARGETS) {
-  const slumpRange = `${targets.slump?.min ?? 160}-${targets.slump?.max ?? 210}`;
-  const spreadRange = `${targets.spread?.min ?? 400}-${targets.spread?.max ?? 550}`;
-  const slumpTimeRange = `${targets.slumpTime?.min ?? 3}-${targets.slumpTime?.max ?? 8}`;
+  const slumpRange = `${targets.slump?.min ?? 160}-${targets.slump?.max ?? 200}`;
+  const spreadRange = `${targets.spread?.min ?? 530}-${targets.spread?.max ?? 570}`;
+  const slumpTimeRange = `${targets.slumpTime?.min ?? 2.5}-${targets.slumpTime?.max ?? 4.5}`;
   const pasteMin = targets.pasteRichness?.min ?? 15;
   return [
     `# 当前批次结构化输入`,
@@ -343,7 +353,7 @@ function buildGlmUserInput(batch, predictions, rules, targets = TARGETS) {
     `- 扩展度: ${predictions.spread} mm（目标 ${spreadRange}mm）`,
     `- 倒坍时间: ${predictions.slumpTime} s（目标 ${slumpTimeRange}s）`,
     `- 浆体富裕度: ${predictions.pasteRichness} %（目标 ≥${pasteMin}%）`,
-    `- 峰值电流偏差: ${predictions.currentDeltaA} A（基准 42A）`,
+    `- 峰值电流偏差: ${predictions.currentDeltaA} A（C30基准 ${CURRENT_BASELINE_A}A）`,
     ``,
     `## 视觉特征`,
     `- 浆体均匀度: ${batch.visual.uniformityScore}%`,
@@ -418,7 +428,7 @@ function parseGlmJson(content) {
 // 合法的根因类别枚举（与 prompt 和 agent-tools.mjs 保持一致）
 const ROOT_CAUSE_CATEGORIES = [
   "lump_tight", "segregation_loose", "mix_deviation",
-  "material_abnormal", "current_abnormal", "drywet_abnormal", "none"
+  "material_abnormal", "current_abnormal", "drywet_abnormal", "data_insufficient", "none"
 ];
 
 // 规整 GLM 返回：补全偶发缺失的 rootCauseCategory 字段。
@@ -464,6 +474,24 @@ async function glmDecisionNode(batch, predictions, rules, targets = TARGETS) {
   const userInput = buildGlmUserInput(batch, predictions, rules, targets);
   const startedAt = Date.now();
   const cfg = getGlmConfig();
+
+  // 关键输入不完整时优先触发数据质量闸门，不把默认预测值交给模型作为放行依据。
+  if (rules.dataQuality?.status === "insufficient") {
+    const decision = ruleBasedDecision(batch, predictions, rules);
+    return {
+      decision: { node: "数据质量闸门", ...decision },
+      meta: {
+        decisionEngine: "rule-fallback",
+        reason: `关键数据源缺失：${rules.dataQuality.missingDataSources.join("、")}`,
+        glmModel: null,
+        glmApiBase: cfg.apiBase,
+        latencyMs: Date.now() - startedAt,
+        tokenUsage: null,
+        rawResponse: null,
+        toolCalls: []
+      }
+    };
+  }
 
   // 无 API Key：直接降级到规则研判，并明确标注。
   if (!cfg.apiKey) {

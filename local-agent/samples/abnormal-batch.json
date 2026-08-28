@@ -1,31 +1,31 @@
 {
-  "batchId": "LS-C30-073-B",
+  "batchId": "C30-20260827-009",
   "plant": "龙山搅拌站",
   "line": "1号生产线",
   "concreteGrade": "C30泵送",
-  "productionTime": "2026-06-10 10:42:00",
+  "productionTime": "2026-08-27 14:31:00",
   "visual": {
-    "uniformityScore": 62,
-    "segregation": "明显",
+    "uniformityScore": 69.3,
+    "segregation": "无",
     "lumps": "局部结团",
     "dryWetState": "偏干",
     "flowability": "弱",
-    "wallAdhesion": "明显"
+    "wallAdhesion": "轻微"
   },
   "current": {
-    "peakA": 49.4,
-    "stableAfterSec": 142,
-    "trend": "持续高位后缓慢回落",
-    "fluctuation": "中高"
+    "peakA": 69.3,
+    "stableAfterSec": 116,
+    "trend": "高位后趋稳",
+    "fluctuation": "中"
   },
   "mix": {
-    "waterCementRatio": 0.405,
-    "pasteAggregateRatio": 0.31,
-    "executionDeviation": "疑似含水率补偿不足"
+    "waterCementRatio": 0.397,
+    "pasteAggregateRatio": 0.334,
+    "executionDeviation": "减水剂或含水率补偿偏低"
   },
   "context": {
-    "temperatureC": 9,
-    "transportDistanceKm": 28,
-    "equipmentEfficiency": "需复核"
+    "temperatureC": 23.4,
+    "transportDistanceKm": 16.5,
+    "equipmentEfficiency": "正常"
   }
 }

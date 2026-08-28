@@ -3,7 +3,7 @@
   "version": "local-poc-1.0",
   "boundary": "当前主链路使用 SQLite/mock 样例数据；adapters/ 提供统一接口和部分协议代码骨架，但 opcua/rest/rtsp 尚未完成现场联调。配置 API Key 时可调用 GLM，失败会明确降级到规则研判；HITL 仅模拟调整并保留人工确认，不执行真实生产控制。",
   "runMeta": {
-    "totalDurationMs": 5325,
+    "totalDurationMs": 1106,
     "nodeCount": 5,
     "simulateLatency": true,
     "adapterBackends": [
@@ -26,8 +26,8 @@
     ]
   },
   "inputSummary": {
-    "batchId": "JB-C30-065-B",
-    "plant": "江北搅拌站",
+    "batchId": "C30-20260827-010",
+    "plant": "龙山搅拌站",
     "concreteGrade": "C30泵送",
     "dataSources": [
       "搅拌/卸料视频特征",
@@ -51,7 +51,7 @@
           "flowability",
           "wallAdhesion"
         ],
-        "sourcePath": "visual_features(batchId=JB-C30-065-B)",
+        "sourcePath": "visual_features(batchId=C30-20260827-010)",
         "ok": true,
         "note": "POC: SQLite 预计算特征；目标接口骨架: RTSP+视觉模型（未现场验证）"
       },
@@ -66,11 +66,11 @@
           "stableAfterSec",
           "trend",
           "fluctuation",
-          "points[0]"
+          "points[160]"
         ],
-        "sourcePath": "sensor_current_points(batchId=JB-C30-065-B)",
+        "sourcePath": "sensor_current_points(batchId=C30-20260827-010)",
         "ok": true,
-        "pointCount": 0,
+        "pointCount": 160,
         "note": "POC: SQLite 160点静态时序；目标接口骨架: OPC UA 订阅（点位与采样率需现场确认）"
       },
       {
@@ -97,7 +97,7 @@
           "transportDistanceKm",
           "equipmentEfficiency"
         ],
-        "sourcePath": "context_features(batchId=JB-C30-065-B)",
+        "sourcePath": "context_features(batchId=C30-20260827-010)",
         "ok": true,
         "note": "POC: SQLite 静态值；生产: 和风天气API + GPS调度 + PLC设备状态"
       },
@@ -109,7 +109,7 @@
         "fields": [
           "materialStatus"
         ],
-        "sourcePath": "context_features.material_status(batchId=JB-C30-065-B)",
+        "sourcePath": "context_features.material_status(batchId=C30-20260827-010)",
         "ok": true,
         "note": "POC: SQLite 字段；生产: ERP /api/inventory/check"
       },
@@ -122,7 +122,8 @@
           "dailyAvgA"
         ],
         "sourcePath": "AVG(avg_a) WHERE grade=C30泵送 AND date=今日",
-        "ok": false,
+        "ok": true,
+        "value": 57.9,
         "note": "POC: SQLite 聚合查询；生产: 时序库近7日滑动均值"
       }
     ],
@@ -131,6 +132,7 @@
         "name": "plc-current-adapter",
         "backend": "sqlite",
         "protocol": "none (static db)",
+        "implementationStatus": "模拟实现",
         "supportedBackends": [
           "sqlite",
           "mock",
@@ -155,6 +157,7 @@
         "name": "erp-mix-adapter",
         "backend": "sqlite",
         "protocol": "none (static db)",
+        "implementationStatus": "模拟实现",
         "supportedBackends": [
           "sqlite",
           "mock",
@@ -174,6 +177,7 @@
         "name": "vision-features-adapter",
         "backend": "sqlite",
         "protocol": "none (static db)",
+        "implementationStatus": "模拟实现",
         "supportedBackends": [
           "sqlite",
           "mock",
@@ -198,6 +202,7 @@
         "name": "context-adapter",
         "backend": "sqlite",
         "protocol": "none (static db)",
+        "implementationStatus": "模拟实现",
         "supportedBackends": [
           "sqlite",
           "mock",
@@ -219,21 +224,21 @@
     {
       "node": "输入节点",
       "status": "completed",
-      "output": "批次信息与6类数据源已结构化（标号=C30泵送，规则已按标号匹配，数据源5/6路在线）",
+      "output": "批次信息与6类数据源已结构化（标号=C30泵送，规则已按标号匹配，数据源6/6路在线）",
       "durationMs": 401
     },
     {
       "node": "规则判断节点",
       "status": "completed",
       "output": "低",
-      "durationMs": 301
+      "durationMs": 302
     },
     {
-      "node": "GLM质量研判节点",
+      "node": "质量研判节点",
       "status": "completed",
       "output": "合格",
-      "engine": "glm",
-      "durationMs": 4220
+      "engine": "rule-fallback",
+      "durationMs": 1
     },
     {
       "node": "分支与HITL节点",
@@ -245,73 +250,80 @@
       "node": "台账归档节点",
       "status": "completed",
       "output": "可归档为POC验证报告样例",
-      "durationMs": 202
+      "durationMs": 201
     }
   ],
   "nodeTimings": [
     {
       "node": "输入节点",
-      "startedAt": 1784512032117,
-      "finishedAt": 1784512032518,
+      "startedAt": 1787882735504,
+      "finishedAt": 1787882735905,
       "durationMs": 401,
-      "output": "批次信息与6类数据源已结构化（标号=C30泵送，规则已按标号匹配，数据源5/6路在线）"
+      "output": "批次信息与6类数据源已结构化（标号=C30泵送，规则已按标号匹配，数据源6/6路在线）"
     },
     {
       "node": "规则判断节点",
-      "startedAt": 1784512032518,
-      "finishedAt": 1784512032819,
-      "durationMs": 301,
+      "startedAt": 1787882735905,
+      "finishedAt": 1787882736207,
+      "durationMs": 302,
       "output": "低"
     },
     {
       "node": "GLM质量研判节点",
-      "startedAt": 1784512032819,
-      "finishedAt": 1784512037039,
-      "durationMs": 4220,
+      "startedAt": 1787882736207,
+      "finishedAt": 1787882736208,
+      "durationMs": 1,
       "output": "合格"
     },
     {
       "node": "分支与HITL节点",
-      "startedAt": 1784512037039,
-      "finishedAt": 1784512037240,
+      "startedAt": 1787882736208,
+      "finishedAt": 1787882736409,
       "durationMs": 201,
       "output": "合格分支"
     },
     {
       "node": "台账归档节点",
-      "startedAt": 1784512037240,
-      "finishedAt": 1784512037442,
-      "durationMs": 202,
+      "startedAt": 1787882736409,
+      "finishedAt": 1787882736610,
+      "durationMs": 201,
       "output": "可归档为POC验证报告样例"
     }
   ],
   "predictions": {
-    "slump": 183,
-    "spread": 455,
-    "slumpTime": 5.4,
-    "pasteRichness": 17.7,
-    "currentDeltaA": 1.3,
-    "modelVersion": "1.0.0",
+    "slump": 189,
+    "spread": 559,
+    "slumpTime": 3.1,
+    "pasteRichness": 18.6,
+    "currentDeltaA": -1.1,
+    "ruleBand": "NORMAL",
+    "modelVersion": "2.0.0-c30-rule",
     "modelCalibratedAt": null
   },
   "rules": {
     "node": "规则判断节点",
     "targetRules": {
+      "mixingCurrent": {
+        "min": 55,
+        "max": 60,
+        "unit": "A",
+        "label": "实时搅拌代表电流"
+      },
       "slump": {
         "min": 160,
-        "max": 210,
+        "max": 200,
         "unit": "mm",
         "label": "坍落度"
       },
       "spread": {
-        "min": 400,
-        "max": 550,
+        "min": 530,
+        "max": 570,
         "unit": "mm",
         "label": "扩展度"
       },
       "slumpTime": {
-        "min": 3,
-        "max": 8,
+        "min": 2.5,
+        "max": 4.5,
         "unit": "s",
         "label": "倒坍时间"
       },
@@ -338,86 +350,74 @@
       {
         "metric": "slump",
         "label": "坍落度",
-        "value": 183,
+        "value": 189,
         "unit": "mm",
         "status": "ok",
-        "message": "坍落度183mm处于目标范围"
+        "message": "坍落度189mm处于目标范围"
       },
       {
         "metric": "spread",
         "label": "扩展度",
-        "value": 455,
+        "value": 559,
         "unit": "mm",
         "status": "ok",
-        "message": "扩展度455mm处于目标范围"
+        "message": "扩展度559mm处于目标范围"
       },
       {
         "metric": "slumpTime",
         "label": "倒坍时间",
-        "value": 5.4,
+        "value": 3.1,
         "unit": "s",
         "status": "ok",
-        "message": "倒坍时间5.4s处于目标范围"
+        "message": "倒坍时间3.1s处于目标范围"
       },
       {
         "metric": "pasteRichness",
         "label": "浆体富裕度",
-        "value": 17.7,
+        "value": 18.6,
         "unit": "%",
         "status": "ok",
-        "message": "浆体富裕度17.7%处于目标范围"
+        "message": "浆体富裕度18.6%处于目标范围"
       }
     ],
     "visualChecks": [
-      "浆体均匀度82%可接受",
+      "浆体均匀度83.4%可接受",
       "离析状态：无",
       "干湿状态：适中",
       "流动性：正常"
     ],
     "currentChecks": [
-      "峰值电流较基准偏差1.3A，处于可观察范围",
-      "电流达稳时间98s可接受",
-      "电流趋势：94s后趋于稳定"
+      "峰值电流较基准偏差-1.1A，处于可观察范围",
+      "电流达稳时间89s可接受",
+      "电流趋势：过滤瞬态后保持稳定"
     ],
     "hardRisks": [],
     "riskScore": 0,
     "riskLevel": "低"
   },
   "decision": {
-    "node": "GLM质量研判节点",
+    "node": "质量研判节点",
     "qualityJudgement": "合格",
     "riskLevel": "低",
     "keyEvidence": [
-      "坍落度183mm在目标范围160-210mm内",
-      "扩展度455mm在目标范围400-550mm内",
-      "倒坍时间5.4s在目标范围3-8s内",
-      "浆体富裕度17.7%高于目标值≥15%",
-      "浆体均匀度82%表现良好",
-      "峰值电流43.3A正常且波动程度低"
+      "坍落度189mm、扩展度559mm、倒坍时间3.1s、浆体富裕度18.6%均在目标范围内",
+      "视觉均匀度83.4%，未发现明显离析、结团或偏干",
+      "峰值电流56.4A，达稳时间89s，搅拌负载稳定"
     ],
-    "rootCause": "none",
+    "rootCause": "未识别到显著质量异常，当前批次满足出料放行条件。",
     "rootCauseCategory": "none",
     "actionSuggestion": "建议质检员复核后放行，并将预测指标、视觉结论和电流结论写入质量台账。",
     "requireHumanConfirm": true
   },
   "decisionMeta": {
-    "decisionEngine": "glm",
-    "reason": "GLM Agent 完成 1 轮推理（工具调用 0 次）",
-    "glmModel": "glm-4",
+    "decisionEngine": "rule-fallback",
+    "reason": "GLM_API_KEY 未配置，降级到规则研判",
+    "glmModel": null,
     "glmApiBase": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
-    "latencyMs": 4219,
-    "tokenUsage": {
-      "completion_tokens": 159,
-      "prompt_tokens": 4100,
-      "total_tokens": 4259
-    },
-    "rawResponse": {
-      "id": "20260720094713ca37f593cb6d4684",
-      "content": "\n```json\n{\n  \"qualityJudgement\": \"合格\",\n  \"riskLevel\": \"低\",\n  \"keyEvidence\": [\"坍落度183mm在目标范围160-210mm内\", \"扩展度455mm在目标范围400-550mm内\", \"倒坍时间5.4s在目标范围3-8s内\", \"浆体富裕度17.7%高于目标值≥15%\", \"浆体均匀度82%表现良好\", \"峰值电流43.3A正常且波动程度低\"],\n  \"rootCause\": \"none\",\n  \"actionSuggestion\": \"建议质检员复核后放行，并将预测指标、视觉结论和电流结论写入质量台账。\",\n  \"requireHumanConfirm\": true\n}\n```",
-      "finishReason": "stop"
-    },
-    "toolCalls": [],
-    "reasoningRounds": 1
+    "latencyMs": 0,
+    "tokenUsage": null,
+    "rawResponse": null,
+    "toolCalls": []
   },
   "branch": {
     "node": "分支与HITL节点",
@@ -429,26 +429,27 @@
   },
   "ledger": {
     "node": "台账归档节点",
-    "batchId": "JB-C30-065-B",
-    "plant": "江北搅拌站",
+    "batchId": "C30-20260827-010",
+    "plant": "龙山搅拌站",
     "line": "1号生产线",
     "concreteGrade": "C30泵送",
-    "productionTime": "2026-07-20 03:10:00",
-    "visualConclusion": "适中，均匀度82%，离析：无",
-    "currentConclusion": "峰值43.3A，达稳98s，趋势：94s后趋于稳定",
-    "mixConclusion": "水灰比0.42，浆骨比0.34，执行偏差无明显偏差",
+    "productionTime": "2026-08-27 15:13:00",
+    "visualConclusion": "适中，均匀度83.4%，离析：无",
+    "currentConclusion": "峰值56.4A，达稳89s，趋势：过滤瞬态后保持稳定",
+    "mixConclusion": "水灰比0.414，浆骨比0.349，执行偏差无明显偏差",
     "predictions": {
-      "slump": 183,
-      "spread": 455,
-      "slumpTime": 5.4,
-      "pasteRichness": 17.7,
-      "currentDeltaA": 1.3,
-      "modelVersion": "1.0.0",
+      "slump": 189,
+      "spread": 559,
+      "slumpTime": 3.1,
+      "pasteRichness": 18.6,
+      "currentDeltaA": -1.1,
+      "ruleBand": "NORMAL",
+      "modelVersion": "2.0.0-c30-rule",
       "modelCalibratedAt": null
     },
-    "currentAvgA": 39.3,
-    "waterCementRatio": 0.42,
-    "pasteAggregateRatio": 0.34,
+    "currentAvgA": 55.8,
+    "waterCementRatio": 0.414,
+    "pasteAggregateRatio": 0.349,
     "rootCauseCategory": "none",
     "expectedRootCause": "none",
     "ruleRiskLevel": "低",
@@ -458,5 +459,5 @@
     "archiveStatus": "可归档为POC验证报告样例"
   },
   "agentToolCalls": [],
-  "agentReasoningRounds": 1
+  "agentReasoningRounds": 0
 }

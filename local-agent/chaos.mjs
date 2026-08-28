@@ -153,6 +153,8 @@ async function main() {
         persistRunLogs: false, simulateLatency: false,
       });
       assert(result.decision, "返回结构完整");
+      assert(result.decision.qualityJudgement === "异常待确认", "数据不足时禁止判合格");
+      assert(result.decision.rootCauseCategory === "data_insufficient", "根因标记为数据不足");
       console.log(`    slump=${result.predictions.slump}mm 判定=${result.decision.qualityJudgement}`);
     } catch (e) {
       // 极端空批次允许抛错，但应该是可读的错误，不是 TypeError

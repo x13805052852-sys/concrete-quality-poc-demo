@@ -309,48 +309,55 @@
 
   <script>
     const TARGETS = {
-      slump: { min: 160, max: 210, unit: "mm", label: "坍落度" },
-      spread: { min: 400, max: 550, unit: "mm", label: "扩展度" },
-      slumpTime: { min: 3, max: 8, unit: "s", label: "倒坍时间" },
+      slump: { min: 160, max: 200, unit: "mm", label: "坍落度" },
+      spread: { min: 530, max: 570, unit: "mm", label: "扩展度" },
+      slumpTime: { min: 2.5, max: 4.5, unit: "s", label: "倒坍时间" },
       pasteRichness: { min: 15, max: null, unit: "%", label: "浆体富裕度" }
     };
 
     const samples = {
       qualified: {
-        batchId: "LS-C30-072-A",
+        batchId: "C30-20260827-010",
         plant: "龙山搅拌站",
         line: "1号生产线",
         concreteGrade: "C30泵送",
         visual: { uniformityScore: 86, segregation: "无", dryWetState: "适中", flowability: "正常", wallAdhesion: "轻微" },
-        current: { peakA: 42.8, stableAfterSec: 94, trend: "90s后趋于稳定" },
-        mix: { waterCementRatio: 0.42, pasteAggregateRatio: 0.33, executionDeviation: "无明显偏差" },
+        current: { peakA: 56.4, stableAfterSec: 89, trend: "过滤瞬态后保持稳定" },
+        mix: { waterCementRatio: 0.41, pasteAggregateRatio: 0.34, executionDeviation: "无明显偏差" },
         context: { temperatureC: 24, transportDistanceKm: 12, equipmentEfficiency: "正常" }
       },
       abnormal: {
-        batchId: "LS-C30-073-B",
+        batchId: "C30-20260827-009",
         plant: "龙山搅拌站",
         line: "1号生产线",
         concreteGrade: "C30泵送",
-        visual: { uniformityScore: 62, segregation: "明显", dryWetState: "偏干", flowability: "弱", wallAdhesion: "明显" },
-        current: { peakA: 49.4, stableAfterSec: 142, trend: "持续高位后缓慢回落" },
-        mix: { waterCementRatio: 0.405, pasteAggregateRatio: 0.31, executionDeviation: "疑似含水率补偿不足" },
-        context: { temperatureC: 9, transportDistanceKm: 28, equipmentEfficiency: "需复核" }
+        visual: { uniformityScore: 72, segregation: "无", dryWetState: "偏干", flowability: "偏弱", wallAdhesion: "轻微" },
+        current: { peakA: 69.3, stableAfterSec: 116, trend: "高位后趋稳" },
+        mix: { waterCementRatio: 0.40, pasteAggregateRatio: 0.33, executionDeviation: "减水剂或含水率补偿偏低" },
+        context: { temperatureC: 24, transportDistanceKm: 18, equipmentEfficiency: "正常" }
       }
     };
 
     const round = (value, digits = 1) => Number.parseFloat(value.toFixed(digits));
 
+    const RULE_BANDS = {
+      NORMAL: { currentMin: 55, currentMax: 60, slumpAtMin: 200, slumpAtMax: 160, spreadAtMin: 570, spreadAtMax: 530, timeAtMin: 2.5, timeAtMax: 4.5 },
+      DRY_MILD: { currentMin: 60, currentMax: 70, slumpAtMin: 160, slumpAtMax: 150, spreadAtMin: 520, spreadAtMax: 500, timeAtMin: 4.6, timeAtMax: 5.5 }
+    };
+
+    function interpolate(band, current, minKey, maxKey) {
+      const clamped = Math.max(band.currentMin, Math.min(band.currentMax, current));
+      const ratio = (clamped - band.currentMin) / (band.currentMax - band.currentMin);
+      return band[minKey] + ratio * (band[maxKey] - band[minKey]);
+    }
+
     function derivePredictions(batch) {
-      const currentDelta = batch.current.peakA - 42;
-      const visualDryPenalty = Math.max(0, 75 - batch.visual.uniformityScore) * 0.5;
-      const segregationPenalty = batch.visual.segregation === "明显" ? 12 : batch.visual.segregation === "轻微" ? 6 : 0;
-      const temperaturePenalty = batch.context.temperatureC <= 10 ? 5 : 0;
-      const distancePenalty = Math.max(0, batch.context.transportDistanceKm - 20) * 0.3;
-      const waterCementAdjustment = (batch.mix.waterCementRatio - 0.42) * 250;
+      const band = batch.visual.dryWetState === "偏干" ? RULE_BANDS.DRY_MILD : RULE_BANDS.NORMAL;
+      const currentDelta = batch.current.peakA - 57.5;
       return {
-        slump: round(188 - currentDelta * 4 - visualDryPenalty - segregationPenalty - temperaturePenalty - distancePenalty + waterCementAdjustment, 0),
-        spread: round(470 - currentDelta * 11.5 - visualDryPenalty * 1.4 - segregationPenalty * 1.3 - distancePenalty * 1.2 + waterCementAdjustment * 1.4, 0),
-        slumpTime: round(5.2 + currentDelta * 0.18 + (batch.visual.dryWetState === "偏干" ? 1.2 : 0) + (batch.context.temperatureC <= 10 ? 0.5 : 0), 1),
+        slump: round(interpolate(band, batch.current.peakA, "slumpAtMin", "slumpAtMax"), 0),
+        spread: round(interpolate(band, batch.current.peakA, "spreadAtMin", "spreadAtMax"), 0),
+        slumpTime: round(interpolate(band, batch.current.peakA, "timeAtMin", "timeAtMax"), 1),
         pasteRichness: round(18.2 - currentDelta * 0.4 - (batch.visual.wallAdhesion === "明显" ? 1.8 : 0) - (batch.visual.flowability === "弱" ? 1.4 : 0), 1),
         currentDeltaA: round(currentDelta, 1)
       };

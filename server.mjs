@@ -144,7 +144,9 @@ function getBatchFromDatabase(caseType) {
       sourceNote: payload.sourceNote,
       rowCounts: payload.rowCounts,
       rules: payload.rules,
+      dailyAvgA: payload.dailyAvgA ?? null,
       currentSeriesPreview: payload.currentSeriesPreview,
+      currentPoints: payload.currentPoints || [],
       rawRows: payload.rawRows
     }
   };

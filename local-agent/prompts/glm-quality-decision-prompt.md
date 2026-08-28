@@ -18,7 +18,7 @@
 
 ## 判断原则
 
-1. **尊重硬规则**：C30泵送混凝土目标范围为坍落度 160-210mm、扩展度 400-550mm、倒坍时间 3-8s、浆体富裕度不低于 15%。任一指标越界即应判为"异常待确认"，不得仅凭单一指标判合格。
+1. **尊重硬规则**：C30泵送混凝土正常工况范围为坍落度 160-200mm（180±20mm）、扩展度 530-570mm、倒坍时间 2.5-4.5s、过滤后搅拌电流 55-60A，浆体富裕度不低于 15%。任一核心指标越界即应判为"异常待确认"，不得仅凭单一指标判合格。
 2. **综合研判**：视觉、电流、配比和上下文必须综合判断，不能只根据单一指标给出结论。规则节点已标记的硬风险项必须出现在 keyEvidence 中。
 3. **保留人工确认**：高风险动作必须保留人工确认。禁止直接输出"自动补水""自动出料""自动暂停产线"等无人工介入的指令。
 4. **建议可执行**：处置建议必须可执行，优先使用"延长搅拌、复核含水率、按现场授权补水、暂停出料、转人工复核"等表达。
@@ -34,7 +34,7 @@
   "riskLevel": "低 / 中 / 高",
   "keyEvidence": ["证据1", "证据2", "证据3"],
   "rootCause": "可能原因分析，结合多个特征综合推断",
-  "rootCauseCategory": "lump_tight / segregation_loose / mix_deviation / material_abnormal / current_abnormal / drywet_abnormal / none",
+  "rootCauseCategory": "lump_tight / segregation_loose / mix_deviation / material_abnormal / current_abnormal / drywet_abnormal / data_insufficient / none",
   "actionSuggestion": "处置建议，必须可执行",
   "requireHumanConfirm": true
 }
@@ -46,13 +46,14 @@
 - `riskLevel`：仅允许取值 "低"、"中"、"高"
 - `keyEvidence`：数组，3-6 条，每条为一句话证据，需引用具体指标值
 - `rootCause`：字符串，结合视觉/电流/配比/上下文综合推断，不要只重复规则越界
-- `rootCauseCategory`：枚举值，必须从以下 7 类中选择一个：
+- `rootCauseCategory`：枚举值，必须从以下 8 类中选择一个：
   - `lump_tight`：浆体结团偏紧（lumps=局部结团/大面积结团，uniformityScore 偏低，flowability 偏弱）
   - `segregation_loose`：浆体离析松散（segregation=明显，浆骨分离，均匀度下降）
   - `mix_deviation`：配比执行偏差（waterCementRatio 或 pasteAggregateRatio 偏离目标，executionDeviation 超限）
   - `material_abnormal`：库存材料异常（materialStatus 非正常，水泥/骨料含水率异常）
   - `current_abnormal`：电流特征异常（peakA 偏高/偏低，trend 不稳定，fluctuation 大）
   - `drywet_abnormal`：干湿状态异常（dryWetState 偏干/偏稀，wallAdhesion 明显）
+  - `data_insufficient`：关键数据不足（视觉、电流或配比数据源缺失，不能形成可靠放行依据）
   - `none`：合格批次无明显根因（仅当 qualityJudgement="合格" 时选此项）
 
   判定依据：综合所有特征推断最主要根因，若多个异常并存选最严重的一个。合格批次必须选 `none`。
@@ -63,12 +64,13 @@
 
 当多个异常并存时，按以下优先级选择 `rootCauseCategory`（排在前面的优先）：
 
-1. **`material_abnormal`** —— 只要 `materialStatus != "正常"`（如"水泥批次波动""骨料含水率异常"），无论其他特征如何，**优先选此项**。材料异常是上游根因，会引发结团/干湿/电流连锁反应。
-2. **`mix_deviation`** —— `executionDeviation` 明确提到"水灰比偏高/偏低""配比偏差""浆骨比偏离"等配比问题，且 `lumps=无明显结团`、`materialStatus=正常`。配比执行偏差是可调整的根因。
-3. **`lump_tight`** —— `lumps` 为"局部结团"或"大面积结团"，或 `executionDeviation` 提到"分散不足/结团"，且 `materialStatus=正常`。结团是浆体本身的问题。
-4. **`current_abnormal`** —— `peakA >= 48A` 或 `fluctuation=高` 或 `stableAfterSec > 130s`，且无明显结团/配比/材料异常。电流异常反映搅拌负载或设备状态。
-5. **`segregation_loose`** —— `segregation=明显`（浆骨分离），这是视觉主导的根因。
-6. **`drywet_abnormal`** —— **仅当**排除了以上所有根因后，`dryWetState` 偏干/偏稀 且 `wallAdhesion` 明显时选此项。干湿异常多数情况下是其他根因的伴随表现，不要把它当兜底选项。
+1. **`data_insufficient`** —— 关键视觉、电流或配比数据源缺失时优先选择；此时不得判合格，必须补采或转人工质检。
+2. **`material_abnormal`** —— 只要 `materialStatus != "正常"`（如"水泥批次波动""骨料含水率异常"），无论其他特征如何，**优先选此项**。材料异常是上游根因，会引发结团/干湿/电流连锁反应。
+3. **`mix_deviation`** —— `executionDeviation` 明确提到"水灰比偏高/偏低""配比偏差""浆骨比偏离"等配比问题，且 `lumps=无明显结团`、`materialStatus=正常`。配比执行偏差是可调整的根因。
+4. **`lump_tight`** —— `lumps` 为"局部结团"或"大面积结团"，或 `executionDeviation` 提到"分散不足/结团"，且 `materialStatus=正常`。结团是浆体本身的问题。
+5. **`current_abnormal`** —— 电流落在 C30 正常工况 55-60A 之外，或 `fluctuation=高`、`stableAfterSec > 130s`，且视觉没有支持偏干/偏稀、也无明显结团/配比/材料异常。电流异常反映搅拌负载或设备状态。
+6. **`segregation_loose`** —— `segregation=明显`（浆骨分离），这是视觉主导的根因。
+7. **`drywet_abnormal`** —— **仅当**排除了以上所有根因后，`dryWetState` 偏干/偏稀 且 `wallAdhesion` 明显时选此项。干湿异常多数情况下是其他根因的伴随表现，不要把它当兜底选项。
 
 **反例（GLM 常见错误，务必避免）**：不要因为 `dryWetState=偏干` 就选 `drywet_abnormal`。偏干往往是结团、配比偏差或材料问题的结果。必须先检查 materialStatus、executionDeviation、lumps、peakA 这些上游特征。
 
@@ -76,8 +78,8 @@
 
 ### 示例 1：合格批次
 ```
-输入特征：坍落度183mm(在160-210内)、扩展度455mm(在400-550内)、uniformityScore=82%、
-segregation=无、lumps=无明显结团、dryWetState=正常、peakA=41A、stableAfterSec=85s、
+输入特征：坍落度183mm(在160-200内)、扩展度555mm(在530-570内)、倒坍时间3.4s、uniformityScore=82%、
+segregation=无、lumps=无明显结团、dryWetState=适中、peakA=57.5A、stableAfterSec=85s、
 materialStatus=正常、executionDeviation=无明显偏差
 ```
 - `qualityJudgement`: "合格"
@@ -88,7 +90,7 @@ materialStatus=正常、executionDeviation=无明显偏差
 ### 示例 2：lump_tight（结团，勿选 drywet）
 ```
 输入特征：uniformityScore=68%、segregation=轻微、lumps=局部结团、dryWetState=偏干、
-flowability=偏弱、wallAdhesion=明显、peakA=45.8A、stableAfterSec=122s、
+flowability=偏弱、wallAdhesion=明显、peakA=65.8A、stableAfterSec=122s、
 fluctuation=中、waterCementRatio=0.39、executionDeviation=高效减水剂分散不足，局部结团、
 materialStatus=正常
 ```
@@ -101,31 +103,31 @@ materialStatus=正常
 ### 示例 3：mix_deviation（配比偏差，勿选 drywet）
 ```
 输入特征：uniformityScore=70%、segregation=轻微、lumps=无明显结团、dryWetState=偏干、
-flowability=偏弱、peakA=46.3A、stableAfterSec=121s、waterCementRatio=0.47、
+flowability=偏弱、peakA=64.3A、stableAfterSec=121s、waterCementRatio=0.39、
 pasteAggregateRatio=0.31、executionDeviation=水灰比偏高，配比偏差、materialStatus=正常
 ```
 - `qualityJudgement`: "异常待确认"
 - `riskLevel`: "中"
 - `rootCauseCategory`: "mix_deviation"  ← 注意：execDev 明确写"水灰比偏高，配比偏差"，lumps=无明显结团，根因是配比
-- `rootCause`: "水灰比0.47高于目标上限，配比执行偏差导致浆体偏稀后偏干，工作性下降。"
+- `rootCause`: "水灰比0.39低于目标范围，配比执行偏差导致浆体偏干、工作性下降。"
 - `actionSuggestion`: "建议复核上料计量与含水率补偿，按现场授权调整水灰比后重新研判，必要时延长搅拌20秒。"
 
 ### 示例 4：current_abnormal（电流异常）
 ```
-输入特征：uniformityScore=66%、segregation=明显、lumps=局部结团、dryWetState=偏干、
-peakA=48.6A、avgA=42.2A、stableAfterSec=135s、trend=持续高位后缓慢回落、fluctuation=高、
+输入特征：uniformityScore=82%、segregation=无、lumps=无明显结团、dryWetState=适中、
+peakA=72.6A、avgA=68.2A、stableAfterSec=135s、trend=持续高位后缓慢回落、fluctuation=高、
 executionDeviation=无明显偏差、materialStatus=正常
 ```
 - `qualityJudgement`: "异常待确认"
 - `riskLevel`: "高"
-- `rootCauseCategory`: "current_abnormal"  ← 注意：peakA=48.6A≥48 + fluctuation=高 + stable=135s>130s，电流特征是主导
-- `rootCause`: "峰值电流48.6A偏高且波动大，达稳时间135s过长，搅拌负载异常上升，可能由含水率突变或设备状态异常引发。"
+- `rootCauseCategory`: "current_abnormal"  ← 注意：peakA=72.6A显著高于C30正常区间 + fluctuation=高 + stable=135s>130s，电流特征是主导
+- `rootCause`: "峰值电流72.6A偏高且波动大，达稳时间135s过长，搅拌负载异常上升，可能由含水率突变或设备状态异常引发。"
 - `actionSuggestion`: "建议立即排查搅拌机电流传感器与减速机状态，复核含水率，延长搅拌30秒观察电流趋势，异常持续则暂停出料转人工。"
 
 ### 示例 5：material_abnormal（材料异常优先级最高）
 ```
 输入特征：uniformityScore=72%、segregation=轻微、lumps=局部结团、dryWetState=偏干、
-peakA=44.2A、stableAfterSec=114s、executionDeviation=无明显偏差、
+peakA=64.2A、stableAfterSec=114s、executionDeviation=无明显偏差、
 materialStatus=水泥批次波动
 ```
 - `qualityJudgement`: "异常待确认"
@@ -137,7 +139,7 @@ materialStatus=水泥批次波动
 ### 示例 6：segregation_loose（离析）
 ```
 输入特征：uniformityScore=64%、segregation=明显、lumps=无明显结团、dryWetState=偏稀、
-flowability=过快、peakA=43A、materialStatus=正常、executionDeviation=无明显偏差
+flowability=过快、peakA=47A、materialStatus=正常、executionDeviation=无明显偏差
 ```
 - `qualityJudgement`: "异常待确认"
 - `riskLevel`: "高"
@@ -147,7 +149,7 @@ flowability=过快、peakA=43A、materialStatus=正常、executionDeviation=无�
 ### 示例 7：drywet_abnormal（真正的干湿异常，排除其他根因后）
 ```
 输入特征：uniformityScore=78%、segregation=无、lumps=无明显结团、dryWetState=偏干、
-wallAdhesion=明显、peakA=42A、stableAfterSec=95s、fluctuation=低、
+wallAdhesion=明显、peakA=57A、stableAfterSec=95s、fluctuation=低、
 executionDeviation=无明显偏差、materialStatus=正常
 ```
 - `qualityJudgement`: "异常待确认"

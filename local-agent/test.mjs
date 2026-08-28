@@ -58,7 +58,30 @@ describe("model-params.json", () => {
 
   test("currentBaselineA 存在且在合理范围", () => {
     const a = MP.currentBaselineA.value;
-    assert.ok(a >= 30 && a <= 60, `currentBaselineA 应在 30-60A，实际 ${a}`);
+    assert.equal(a, 57.5, `C30正常电流基准应为55-60A中点57.5A，实际 ${a}`);
+  });
+
+  test("C30五档规则参数完整", () => {
+    const bands = MP.c30RuleBands || {};
+    for (const code of ["NORMAL", "DRY_MILD", "DRY_SEVERE", "WET_MILD", "WET_SEVERE"]) {
+      assert.ok(bands[code], `缺少规则档位 ${code}`);
+    }
+    assert.deepEqual([bands.NORMAL.currentMin, bands.NORMAL.currentMax], [55, 60]);
+  });
+});
+
+describe("C30规则数据集", () => {
+  const payload = runPythonJson(DB_QUERY_SCRIPT, ["--list"]);
+  test("SQLite只包含300条C30批次", () => {
+    assert.equal(payload.total, 300);
+    assert.ok(payload.batches.every((batch) => batch.concreteGrade === "C30泵送"));
+  });
+
+  test("五档样本数量与Excel设计一致", () => {
+    const counts = Object.groupBy
+      ? Object.fromEntries(Object.entries(Object.groupBy(payload.batches, (batch) => batch.conditionCode)).map(([key, value]) => [key, value.length]))
+      : payload.batches.reduce((acc, batch) => ({ ...acc, [batch.conditionCode]: (acc[batch.conditionCode] || 0) + 1 }), {});
+    assert.deepEqual(counts, { NORMAL: 180, DRY_MILD: 45, DRY_SEVERE: 30, WET_MILD: 30, WET_SEVERE: 15 });
   });
 });
 
@@ -162,7 +185,7 @@ describe("runQualityAgent 端到端", () => {
 });
 
 describe("空批次边界（与 chaos 互补）", () => {
-  test("全空批次不抛异常且 slump 是有限数", async () => {
+  test("全空批次触发数据质量闸门，不允许默认判合格", async () => {
     const emptyBatch = {
       batchId: "TEST-EMPTY", plant: "测试", line: "测试", concreteGrade: "C30泵送", productionTime: "2026-01-01 00:00:00",
       visual: {}, current: {}, mix: {}, context: {},
@@ -173,5 +196,8 @@ describe("空批次边界（与 chaos 互补）", () => {
     });
     assert.ok(Number.isFinite(result.predictions.slump), `slump 应为有限数，实际 ${result.predictions.slump}`);
     assert.ok(Number.isFinite(result.predictions.spread), "spread 应为有限数");
+    assert.equal(result.decision.qualityJudgement, "异常待确认");
+    assert.equal(result.decision.rootCauseCategory, "data_insufficient");
+    assert.equal(result.rules.dataQuality.status, "insufficient");
   });
 });
