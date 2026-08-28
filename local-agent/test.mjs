@@ -71,6 +71,7 @@ describe("适配器 adapterMeta", () => {
     test(`${m.name} 字段完整`, () => {
       assert.ok(m.backend, "缺 backend");
       assert.ok(m.protocol, "缺 protocol");
+      assert.ok(["模拟实现", "接口骨架（未验证）"].includes(m.implementationStatus), "缺合法 implementationStatus");
       assert.ok(Array.isArray(m.supportedBackends) && m.supportedBackends.length >= 2, "supportedBackends 至少 2 个");
       assert.ok(m.productionConfig, "缺 productionConfig");
       assert.ok(m.description, "缺 description");

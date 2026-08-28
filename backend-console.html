@@ -223,6 +223,7 @@
       $('adapters').innerHTML = adapters.map(a => `
         <div class="adapter-card">
           <div><span class="name">${a.name}</span> <span class="backend">[${a.backend}]</span></div>
+          <div class="muted" style="font-size:10px;margin-top:2px;">实现状态: ${a.implementationStatus || '未声明'}</div>
           <div class="desc">${a.description}</div>
           <div class="muted" style="font-size:10px;margin-top:2px;">支持: ${(a.supportedBackends||[]).join(' / ')}</div>
         </div>

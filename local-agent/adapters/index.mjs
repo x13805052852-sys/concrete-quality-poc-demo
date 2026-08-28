@@ -1,7 +1,7 @@
 // 适配层索引 — 统一导出 4 路数据源适配器
 // ====================================================================
 // agent.mjs 只 import 本文件，不直接 import 具体 adapter。
-// 这样切换 backend（sqlite → opcua/rest/rtsp）时，agent 零改动。
+// 统一接口用于降低上层改动，但真实 backend 仍需接入批次组装流程并完成现场联调。
 //
 // 数据源对照（与 agent.mjs inputSummary.dataSources 一一对应）：
 //   1. 搅拌/卸料视频特征 → vision-adapter
@@ -46,7 +46,7 @@ export async function assembleBatchFromAdapters(batch, dbMeta = {}) {
     fields: ["uniformityScore", "segregation", "lumps", "dryWetState", "flowability", "wallAdhesion"],
     sourcePath: `visual_features(batchId=${batch.batchId})`,
     ok: batch.visual?.uniformityScore != null,
-    note: "POC: SQLite 预计算特征；生产: RTSP+YOLOv8-seg 实时推理"
+    note: "POC: SQLite 预计算特征；目标接口骨架: RTSP+视觉模型（未现场验证）"
   });
 
   // 2. PLC 电流时序
@@ -60,7 +60,7 @@ export async function assembleBatchFromAdapters(batch, dbMeta = {}) {
     sourcePath: `sensor_current_points(batchId=${batch.batchId})`,
     ok: batch.current?.peakA != null,
     pointCount: currentPoints.length,
-    note: "POC: SQLite 160点静态时序；生产: OPC UA 订阅 Channel1.Mixer.Current 100ms 采样"
+    note: "POC: SQLite 160点静态时序；目标接口骨架: OPC UA 订阅（点位与采样率需现场确认）"
   });
 
   // 3. ERP 配比

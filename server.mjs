@@ -365,11 +365,12 @@ const server = http.createServer(async (req, res) => {
           keySuffix: GLM_API_KEY ? `****${GLM_API_KEY.slice(-4)}` : null,
           apiBase: process.env.GLM_API_BASE || "https://open.bigmodel.cn/api/paas/v4/chat/completions"
         },
-        // 数据接入适配层：4 路适配器，POC=sqlite，生产切 opcua/rest/rtsp 时 agent 零改动
+        // 数据接入适配层：明确区分本地模拟实现与尚未现场验证的接口骨架
         adapters: getAllAdapterMeta().map(a => ({
           name: a.name,
           backend: a.backend,
           protocol: a.protocol,
+          implementationStatus: a.implementationStatus,
           supportedBackends: a.supportedBackends,
           description: a.description
         })),

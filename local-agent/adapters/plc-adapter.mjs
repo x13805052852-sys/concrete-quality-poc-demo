@@ -1,8 +1,8 @@
 // PLC 电流时序适配器
 // ====================================================================
 // 设计目标：把工业协议（OPC UA / Modbus TCP / Siemens S7）抽象成统一接口，
-// agent.mjs 只依赖本接口，不感知底层协议。生产部署时只需替换 backend 实现，
-// agent 与上层逻辑零改动。
+// agent.mjs 只依赖本接口，不感知底层协议。真实部署仍需核对点位、数据契约、
+// 重试与告警，并把 adapter 读数接入批次组装流程。
 //
 // backend 切换：环境变量 PLC_BACKEND
 //   - sqlite (默认, POC)：从 quality-agent-demo.sqlite 读预采集时序
@@ -301,8 +301,9 @@ export const adapterMeta = {
   name: "plc-current-adapter",
   backend: BACKEND,
   protocol: BACKEND === "sqlite" ? "none (static db)" : BACKEND,
+  implementationStatus: ["sqlite", "mock"].includes(BACKEND) ? "模拟实现" : "接口骨架（未验证）",
   supportedBackends: ["sqlite", "mock", "opcua", "modbus"],
-  description: "搅拌机电流时序数据适配层。POC=sqlite，演示=mock，生产=opcua/modbus（需装 node-opcua/modbus-serial）。",
+  description: "搅拌机电流时序适配层。sqlite/mock 可用于本地 POC；opcua/modbus 为待现场联调的接口骨架。",
   productionConfig: {
     opcua: { endpoint: OPCUA_ENDPOINT, nodeId: OPCUA_NODE_ID },
     modbus: { host: MODBUS_HOST, port: MODBUS_PORT, regStart: MODBUS_REGISTER_START, regCount: MODBUS_REGISTER_COUNT },

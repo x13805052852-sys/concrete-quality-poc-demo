@@ -744,7 +744,7 @@ export async function runQualityAgent(batch, options = {}) {
   const gradeLabel = batch.concreteGrade || "C30泵送";
 
   // 输入节点：批次信息结构化
-  // 通过适配层登记 6 路数据源来源（POC 走 SQLite，生产走 OPC UA/ERP/RTSP，agent 零改动切换）
+  // 通过适配层登记 6 类数据来源。当前主链路走 SQLite；真实接口仍需接入组装流程并联调。
   const t1 = timer.start("输入节点");
   const { dataSourceTrace, adapterMeta } = await assembleBatchFromAdapters(batch, options.dbMeta || {});
   if (options.simulateLatency !== false) await sleep(400);
@@ -820,7 +820,7 @@ export async function runQualityAgent(batch, options = {}) {
   return {
     agentName: "混凝土生产质量智能体_本地验证链路",
     version: "local-poc-1.0",
-    boundary: "数据接入层已抽象为 adapters/（plc/erp/vision/context 四路适配器），POC 阶段 backend=sqlite 读预采集数据；生产部署切换 backend=opcua/rest/rtsp 时 agent 逻辑零改动。GLM 真实调用，HITL 高风险动作保留人工确认。",
+    boundary: "当前主链路使用 SQLite/mock 样例数据；adapters/ 提供统一接口和部分协议代码骨架，但 opcua/rest/rtsp 尚未完成现场联调。配置 API Key 时可调用 GLM，失败会明确降级到规则研判；HITL 仅模拟调整并保留人工确认，不执行真实生产控制。",
     runMeta: {
       totalDurationMs,
       nodeCount: nodeTimings.length,

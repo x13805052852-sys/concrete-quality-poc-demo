@@ -192,8 +192,9 @@ export const adapterMeta = {
   name: "erp-mix-adapter",
   backend: BACKEND,
   protocol: BACKEND === "sqlite" ? "none (static db)" : BACKEND,
+  implementationStatus: ["sqlite", "mock"].includes(BACKEND) ? "模拟实现" : "接口骨架（未验证）",
   supportedBackends: ["sqlite", "mock", "rest", "mes"],
-  description: "配比单与材料库存适配层。POC=sqlite，演示=mock，生产=REST/MES（用友/金蝶/自研 CQMS）。",
+  description: "配比单与材料库存适配层。sqlite/mock 可用于本地 POC；REST/MES 为待系统联调的接口骨架。",
   productionConfig: {
     rest: { apiBase: ERP_API_BASE, tokenConfigured: Boolean(ERP_API_TOKEN), timeoutMs: ERP_TIMEOUT_MS },
   },

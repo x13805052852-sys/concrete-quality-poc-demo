@@ -4,6 +4,25 @@
 
 本场景重点聚焦龙山厂混凝土生产过程中的搅拌状态识别、质量判断和出料放行环节，实现从生产开盘、配合比执行、搅拌过程监测、质检抽检到合格出料或异常处置的连续过程智能化。
 
+## 能力完成度
+
+状态定义：**已实现（本地 POC）**表示可在本仓库运行验证；**模拟实现**表示使用合成或预置样例；**接口骨架**表示已有代码结构但尚未完成真实系统联调；**规划中**表示尚未实现。
+
+| 能力 | 当前数据/来源 | 实现状态 | 可验证证据 | 当前限制 |
+|---|---|---|---|---|
+| 驾驶舱与本地服务 | 前端合成数据 + SQLite 样例库 | 已实现（本地 POC） | `/`、`/api/health`、`/api/run-agent` | 驾驶舱展示数据未直接读取真实产线 |
+| PLC 电流 | SQLite 预置时序；mock 模式可生成波形 | 模拟实现 | `/api/current-stream`、`plc-adapter.mjs`、自动测试 | 未连接真实 PLC；OPC UA/Modbus 未现场验收 |
+| 视觉特征 | 预录视频 + SQLite 预计算特征 | 模拟实现 | `assets/`、`visual_features` 表、样例报告 | 未部署真实视觉模型；页面不是实时 RTSP 推理 |
+| ERP 配比与库存 | SQLite 样例字段 | 模拟实现 | `/api/db/batch`、`erp-adapter.mjs` | 未连接真实 ERP/MES |
+| 气象、运距与设备状态 | SQLite 静态上下文 | 模拟实现 | `context_features` 表、`context-adapter.mjs` | 未连接真实天气、调度或设备接口 |
+| 四项指标预测 | 经验系数与可解释规则 | 已实现（本地 POC） | `model-params.json`、`evaluate.mjs` | 未使用真实产线数据完成标定 |
+| GLM 质量研判 | 配置 API Key 时调用 GLM；否则规则降级 | 已实现（本地 POC） | `agent.mjs`、调用日志、评估结果 | GLM 只生成研判与建议，不拥有最终放行权 |
+| HITL 与台账 | SQLite 台账和调整效果模拟 | 已实现（本地 POC） | `/api/hitl-action`、`/api/execute-action`、`quality_ledger` | 未连接生产控制系统，不执行真实补水、停机或放行 |
+| OPC UA/Modbus、REST/MES、RTSP/ONVIF | adapter 中的协议实现与配置入口 | 接口骨架 | `local-agent/adapters/` | 需安装依赖、对接真实点位并完成现场联调验收 |
+| 生产监控、权限与告警 | 无 | 规划中 | 无 | 尚未实现生产级鉴权、监控、告警和回滚 |
+
+驾驶舱会同时显示两类来源标识：`SYNTHETIC` 表示页面使用预录/合成演示数据；`SQLITE` 表示后端读取本地样例库；`MOCK` 表示适配器生成模拟数据；`REAL-CONFIG` 仅表示已选择真实协议 backend，不代表已经完成现场验收。
+
 ## 文件结构
 
 ```
@@ -48,15 +67,15 @@ concrete-quality-poc-demo/
 
 ## 功能特性
 
-1. **多源数据融合** - 6大数据源接入：视频、电流、配比、气象、运距、设备状态
+1. **多源数据融合** - 本地整合视频特征、电流、配比、气象、运距和设备状态 6 类样例字段
 2. **综合预测模型** - 4项核心指标预测：坍落度、扩展度、倒坍时间、浆体富裕程度
-3. **GLM决策模块** - 判定结果 + 处置策略 + 根因推断
-4. **电流峰值自动触发** - 电流达到阈值时自动触发视频抓拍
+3. **GLM/规则研判** - 配置 GLM API 时运行大模型研判，否则明确降级到规则判断
+4. **电流峰值触发演示** - 前端模拟电流达到阈值时触发预录视频分析
 5. **视觉特征6类输出** - 浆体均匀度、离析状态、结团/结块、干湿状态、流动性、罐壁挂料
 6. **电流时序4类特征** - 稳态特征、峰值特征、延迟特征、趋势特征
 7. **受控闭环执行** - 合格生成放行建议，不合格进入HITL人工确认或授权调整
 8. **质量台账完整字段** - 基本信息、视觉结论、电流结论、配比结论、模型预测、最终判定
-9. **持续优化层展示** - 模型迭代状态、质量标准动态更新
+9. **持续优化层展示** - 展示模型迭代和质量标准更新的产品设计，不代表已接入在线训练
 10. **C30泵送混凝土规则参考** - 电流-坍落度关联规则、搅拌时间规则、质量目标范围
 11. **历史数据积累可视化** - 近30日统计、近5批次记录
 
@@ -64,7 +83,7 @@ concrete-quality-poc-demo/
 多源数据融合
 - 左侧面板：数据源状态（6路）
 - 中央区域：视觉分析 + 电流实时监测
-- 右侧面板：GLM决策模块 + 特征输出
+- 右侧面板：质量决策演示 + 特征输出
 预测与决策
 - 综合预测模型输出4项指标
 - GLM大模型结构化决策
@@ -90,10 +109,10 @@ graph TD
     end
 
     subgraph 数据接入适配层["数据接入适配层 adapters/"]
-        PLC_A[plc-adapter<br/>POC=sqlite<br/>生产=OPC UA/Modbus]
-        ERP_A[erp-adapter<br/>POC=sqlite<br/>生产=REST/MES]
-        VIS_A[vision-adapter<br/>POC=sqlite<br/>生产=RTSP+YOLOv8]
-        CTX_A[context-adapter<br/>POC=sqlite<br/>生产=天气API+调度]
+        PLC_A[plc-adapter<br/>POC=sqlite<br/>目标接口=OPC UA/Modbus]
+        ERP_A[erp-adapter<br/>POC=sqlite<br/>目标接口=REST/MES]
+        VIS_A[vision-adapter<br/>POC=sqlite<br/>目标接口=RTSP+视觉模型]
+        CTX_A[context-adapter<br/>POC=sqlite<br/>目标接口=天气API+调度]
     end
 
     subgraph Agent["Agent 主流程 agent.mjs（5节点 + ReAct循环）"]
@@ -155,11 +174,11 @@ graph TD
               context-adapter
                 ↓
         POC: SQLite预采集
-        生产: OPC UA/REST API/RTSP
-        （切换backend时agent零改动）
+        目标接口: OPC UA/REST API/RTSP
+        （生产接入仍需协议、点位与数据契约联调）
 ```
 
-**适配层设计**：4路适配器（plc/erp/vision/context）把工业协议抽象成统一接口，agent.mjs 只依赖适配层接口，不感知底层是 OPC UA 还是 Modbus。POC 阶段 backend=sqlite 读预采集数据；生产部署通过环境变量切换 backend=opcua/rest/rtsp 时，agent 逻辑零改动。每个适配器文件注释里写清楚了真实部署时对接的 OPC UA tag 路径、Modbus 寄存器地址、RTSP 流地址。
+**适配层设计**：4路适配器（plc/erp/vision/context）定义统一接口，降低上层 Agent 对具体协议的依赖。POC 阶段 backend=sqlite 读取样例数据；adapter 文件提供 OPC UA、Modbus、REST、RTSP 等接入骨架和配置入口。切换到真实系统仍需安装依赖、核对点位/字段、补充重试与告警，并完成现场联调验收。
 
 **Agent 工具调用（ReAct）**：GLM 通过 function calling 主动调用 4 个工具：
 - `query_history_batches` — 查同类历史批次（参考历史处置策略）
@@ -183,7 +202,7 @@ graph TD
 → 台账归档节点（写入quality_ledger + agent_run_logs）
 ```
 
-**数据接入**：输入节点通过 `adapters/index.mjs` 的 `assembleBatchFromAdapters` 聚合 4 路适配器数据，生成 `dataSourceTrace`（6路数据源在线状态 + backend/protocol 元信息）。POC 阶段 4 路都走 sqlite backend，生产切 opcua/rest/rtsp 时 agent 零改动。
+**数据接入**：输入节点通过 `adapters/index.mjs` 的 `assembleBatchFromAdapters` 为 SQLite 已组装批次登记 4 路适配器来源，生成 `dataSourceTrace`（6 类数据状态 + backend/protocol 元信息）。当前主链路读取本地 SQLite 样例；真实 opcua/rest/rtsp 接入尚需把各 adapter 的读取结果接入批次组装流程并完成联调。
 
 **ReAct 推理**：GLM 研判节点支持 function calling 多轮循环（最多4轮）。GLM 可主动调用 `query_history_batches`/`check_material_inventory`/`simulate_adjustment`/`get_grade_rules` 4个工具，每次调用记入 `agent_run_logs` 表。响应里返回 `toolCalls`（工具调用记录）和 `reasoningRounds`（推理轮次）。
 
@@ -247,7 +266,7 @@ PLC_BACKEND=mock VISION_BACKEND=mock CTX_BACKEND=mock ERP_BACKEND=mock node serv
 - `local-agent/reports/latest-abnormal-result.json`：异常批次完整输出
 - `local-agent/quality-agent-evidence.html`：可截图的浏览器证据页
 
-边界说明：数据接入层已抽象为 `adapters/`（4路适配器，POC=sqlite，mock=本地演示，生产=opcua/rest/rtsp 时 agent 零改动）。每个适配器都实现了真实协议对接骨架（plc: OPC UA session 订阅 + Modbus 寄存器轮询；erp: REST API + Bearer 认证；vision: ffmpeg 抽帧 + YOLOv8-seg 推理 + ONVIF 事件；context: 和风天气 API + 调度 GPS + MES 设备状态），生产部署装对应 npm 依赖 + 配环境变量即可启用，无需改 agent 代码。GLM 真实调用，HITL 高风险动作保留人工确认且 `/api/execute-action` 提供闭环验证。
+边界说明：`adapters/` 已提供 4 路统一接口和部分协议代码骨架，当前可验证主链路仍以 SQLite/mock 数据为主。OPC UA、Modbus、REST、RTSP、ONVIF、天气、调度和 MES 等真实接入尚未完成现场验证，不能仅通过安装依赖和配置环境变量视为生产可用。GLM 在配置 API Key 时可调用，失败时明确降级到规则研判；`/api/execute-action` 验证的是调整效果模拟与二次研判，不会执行真实生产控制动作。
 
 ## 离线评估（`local-agent/evaluate.mjs`）
 
@@ -314,7 +333,7 @@ local-agent/reports/latest-abnormal-result.json
    - 中栏：Agent ReAct 推理详情（工具调用过程、数据源在线状态、最终判定）
    - 右栏：数据接入适配层（4路适配器 backend/protocol）+ Agent工具列表 + 模型标定状态 + API端点
 
-访问 `/api/health` 可一眼看到架构全貌：4 路适配器（POC=sqlite，生产=opcua/rest/rtsp）、4 个 Agent 工具、模型版本与标定状态、11 个 API 端点。
+访问 `/api/health` 可查看当前 backend、4 路适配器的实现状态、4 个 Agent 工具、模型版本与标定状态及全部 API 端点。列出的 opcua/rest/rtsp 是目标接口选项，不等于已经完成现场接入。
 
 数据库，可以打开：
 

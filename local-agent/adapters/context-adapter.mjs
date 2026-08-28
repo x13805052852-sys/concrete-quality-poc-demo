@@ -135,8 +135,9 @@ export const adapterMeta = {
   name: "context-adapter",
   backend: BACKEND,
   protocol: BACKEND === "sqlite" ? "none (static db)" : BACKEND,
+  implementationStatus: ["sqlite", "mock"].includes(BACKEND) ? "模拟实现" : "接口骨架（未验证）",
   supportedBackends: ["sqlite", "mock", "api"],
-  description: "气象/运距/设备状态上下文适配层。POC=sqlite，演示=mock，生产=api(和风天气+调度+MES)。",
+  description: "气象/运距/设备状态适配层。sqlite/mock 可用于本地 POC；天气、调度和 MES API 为待联调的接口骨架。",
   productionConfig: {
     api: {
       weatherKeyConfigured: Boolean(WEATHER_API_KEY),

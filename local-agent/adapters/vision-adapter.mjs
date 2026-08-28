@@ -274,8 +274,9 @@ export const adapterMeta = {
   name: "vision-features-adapter",
   backend: BACKEND,
   protocol: BACKEND === "sqlite" ? "none (static db)" : BACKEND,
+  implementationStatus: ["sqlite", "mock"].includes(BACKEND) ? "模拟实现" : "接口骨架（未验证）",
   supportedBackends: ["sqlite", "mock", "rtsp", "onvif", "cloud"],
-  description: "搅拌机视觉特征适配层。POC=sqlite，演示=mock，生产=rtsp(YOLOv8-seg)/onvif/cloud。",
+  description: "搅拌机视觉特征适配层。sqlite/mock 可用于本地 POC；RTSP/ONVIF/cloud 为待模型与现场联调的接口骨架。",
   productionConfig: {
     rtsp: { url: RTSP_URL, dischargeUrl: RTSP_DISCHARGE_URL, modelVersion: CV_MODEL_VERSION },
     cloud: { apiBase: CLOUD_API_BASE, tokenConfigured: Boolean(CLOUD_API_TOKEN) },

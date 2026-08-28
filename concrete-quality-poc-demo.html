@@ -68,6 +68,47 @@
 
     .datetime { font-family: "SF Mono", Monaco, monospace; font-size: 14px; color: var(--cyan); }
 
+    .mode-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      background: var(--bg-dark);
+      font-family: "SF Mono", Monaco, monospace;
+      font-size: 9px;
+    }
+
+    .mode-label { color: var(--text-muted); }
+
+    .mode-pill {
+      padding: 2px 5px;
+      border-radius: 3px;
+      border: 1px solid var(--border);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+    }
+
+    .mode-pill.synthetic, .mode-pill.mock { color: var(--yellow); border-color: var(--yellow-dim); background: rgba(210, 153, 34, 0.1); }
+    .mode-pill.sqlite { color: var(--blue); border-color: var(--blue-dim); background: rgba(88, 166, 255, 0.1); }
+    .mode-pill.real { color: var(--green); border-color: var(--green-dim); background: rgba(63, 185, 80, 0.1); }
+    .mode-pill.mixed { color: var(--violet); border-color: var(--violet); background: rgba(163, 113, 247, 0.1); }
+    .mode-pill.offline { color: var(--text-muted); }
+
+    .source-disclosure {
+      margin-bottom: 10px;
+      padding: 8px 10px;
+      border: 1px solid var(--yellow-dim);
+      border-radius: 4px;
+      background: rgba(210, 153, 34, 0.08);
+    }
+
+    .source-disclosure-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .source-disclosure-title { font-size: 11px; color: var(--text); }
+    .source-disclosure-detail { margin-top: 5px; font-size: 10px; line-height: 1.4; color: var(--text-muted); }
+
     .btn {
       padding: 8px 16px;
       border: 1px solid var(--border);
@@ -930,6 +971,12 @@
         </div>
       </div>
       <div class="header-right">
+        <div class="mode-status" title="页面使用预录/合成数据；后端模式从 /api/health 读取">
+          <span class="mode-label">页面</span>
+          <span class="mode-pill synthetic">SYNTHETIC</span>
+          <span class="mode-label">后端</span>
+          <span class="mode-pill offline" id="backendMode">检测中</span>
+        </div>
         <div class="datetime" id="datetime">--</div>
         <button class="btn btn-primary" id="startBtn" onclick="startMonitor()">开始监测</button>
       </div>
@@ -941,15 +988,22 @@
       <div class="panel">
         <div class="panel-header">
           <span class="panel-title">数据源状态</span>
-          <span id="dataSourceCount">0/6 在线</span>
+          <span id="dataSourceCount">0/6 演示源</span>
         </div>
         <div class="panel-body">
+          <div class="source-disclosure">
+            <div class="source-disclosure-row">
+              <span class="source-disclosure-title">当前页面数据</span>
+              <span class="mode-pill synthetic">SYNTHETIC</span>
+            </div>
+            <div class="source-disclosure-detail">预录视频 + 前端合成时序，非实时产线数据。</div>
+          </div>
           <div class="led-row">
-            <span class="led-label">搅拌视频</span>
+            <span class="led-label">搅拌视频（预录）</span>
             <div class="led" id="ledVideo"></div>
           </div>
           <div class="led-row">
-            <span class="led-label">卸料视频</span>
+            <span class="led-label">卸料视频（预录）</span>
             <div class="led" id="ledVideo2"></div>
           </div>
           <div class="divider"></div>
@@ -963,13 +1017,13 @@
             <div class="value-status" id="currentStatus">--</div>
           </div>
           <div class="led-row">
-            <span class="led-label">PLC通讯</span>
+            <span class="led-label">PLC数据（模拟）</span>
             <div class="led" id="ledPLC"></div>
           </div>
           <div class="divider"></div>
 
           <div class="led-row">
-            <span class="led-label">ERP配比</span>
+            <span class="led-label">ERP配比（样例）</span>
             <div class="led" id="ledERP"></div>
           </div>
           <div class="value-card">
@@ -983,7 +1037,7 @@
           <div class="divider"></div>
 
           <div class="led-row">
-            <span class="led-label">气象站</span>
+            <span class="led-label">气象数据（样例）</span>
             <div class="led" id="ledWeather"></div>
           </div>
           <div class="value-card">
@@ -994,7 +1048,7 @@
           <div class="divider"></div>
 
           <div class="led-row">
-            <span class="led-label">运距数据</span>
+            <span class="led-label">运距数据（样例）</span>
             <div class="led" id="ledDistance"></div>
           </div>
           <div class="value-card">
@@ -1005,7 +1059,7 @@
           <div class="divider"></div>
 
           <div class="led-row">
-            <span class="led-label">设备状态</span>
+            <span class="led-label">设备状态（样例）</span>
             <div class="led" id="ledEquip"></div>
           </div>
           <div class="value-card">
@@ -1035,8 +1089,8 @@
           <!-- 左侧：视觉分析 -->
           <div class="content-panel">
             <div class="content-header">
-              <span class="content-title">📹 视觉分析</span>
-              <span id="visionStatus">离线</span>
+              <span class="content-title">📹 视觉特征演示</span>
+              <span id="visionStatus">预录</span>
             </div>
             <div class="content-body">
               <div class="video-area">
@@ -1084,8 +1138,8 @@
           <!-- 右侧：电流实时表 -->
           <div class="content-panel">
             <div class="content-header">
-              <span class="content-title">⚡ 电流实时监测</span>
-              <span id="chartStatus">离线</span>
+              <span class="content-title">⚡ 电流时序监测（模拟）</span>
+              <span id="chartStatus">SIM</span>
             </div>
             <div class="content-body">
               <div class="chart-area">
@@ -1130,7 +1184,7 @@
       <!-- 右侧：决策输出 -->
       <div class="panel">
         <div class="panel-header">
-          <span class="panel-title">GLM决策模块</span>
+          <span class="panel-title">质量决策模块（演示）</span>
           <span id="glmStatus">待判定</span>
         </div>
         <div class="panel-body">
@@ -1574,6 +1628,39 @@
       setInterval(updateDateTime, 1000);
       drawChart();
       initDrag();
+      loadBackendMode();
+    }
+
+    function classifyBackendMode(adapters = []) {
+      const realBackends = new Set(['opcua', 'modbus', 'rest', 'mes', 'rtsp', 'onvif', 'cloud', 'api']);
+      const categories = new Set(adapters.map(adapter => {
+        const backend = String(adapter.backend || '').toLowerCase();
+        if (backend === 'sqlite') return 'sqlite';
+        if (backend === 'mock') return 'mock';
+        if (realBackends.has(backend)) return 'real';
+        return 'offline';
+      }));
+      if (categories.size === 0) return 'offline';
+      if (categories.size > 1) return 'mixed';
+      return [...categories][0];
+    }
+
+    async function loadBackendMode() {
+      const badge = $('backendMode');
+      try {
+        const response = await fetch('/api/health', { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const health = await response.json();
+        const mode = classifyBackendMode(health.adapters || []);
+        const labels = { sqlite: 'SQLITE', mock: 'MOCK', real: 'REAL-CONFIG', mixed: 'MIXED', offline: 'OFFLINE' };
+        badge.textContent = labels[mode] || 'OFFLINE';
+        badge.className = `mode-pill ${mode}`;
+        badge.title = (health.adapters || []).map(adapter => `${adapter.name}: ${adapter.backend}`).join('\n');
+      } catch {
+        badge.textContent = 'OFFLINE';
+        badge.className = 'mode-pill offline';
+        badge.title = '本地后端未启动；当前仅展示静态合成数据。';
+      }
     }
 
     function updateDateTime() {
@@ -1682,7 +1769,7 @@
         $(id).className = 'led';
       });
 
-      $('dataSourceCount').textContent = '0/6 在线';
+      $('dataSourceCount').textContent = '0/6 演示源';
       $('waterCement').textContent = '--';
       $('pasteAgg').textContent = '--';
       $('envTemp').textContent = '--';
@@ -1805,7 +1892,7 @@
 
       addLog('监测系统启动', 'success');
       addLog(state.caseType === 0 ? '本批次预期: 合格案例' : '本批次预期: 不合格案例', 'warn');
-      addLog('正在连接数据源...');
+      addLog('正在加载预录与合成演示数据...');
 
       setTimeout(() => {
         setLed('ledVideo', 'green');
@@ -1815,7 +1902,7 @@
         setLed('ledWeather', 'green');
         setLed('ledDistance', 'green');
         setLed('ledEquip', 'green');
-        $('dataSourceCount').textContent = '6/6 在线';
+        $('dataSourceCount').textContent = '6/6 演示源就绪';
 
         $('waterCement').textContent = '0.42';
         $('pasteAgg').textContent = '0.38';
@@ -1823,9 +1910,9 @@
         $('transDist').textContent = '12.5';
         $('mixerEff').textContent = '94';
 
-        $('visionStatus').textContent = '在线';
-        $('chartStatus').textContent = 'LIVE';
-        $('liveBadge').textContent = '● LIVE';
+        $('visionStatus').textContent = '预录';
+        $('chartStatus').textContent = 'SIM';
+        $('liveBadge').textContent = '● SIM';
 
         // 启动视频播放
         ['videoMain', 'videoDischarge', 'videoManual'].forEach(id => {
@@ -1833,9 +1920,9 @@
           if (video) video.play().catch(e => console.log('Video play error:', id, e));
         });
 
-        addLog('6路数据源全部在线', 'success');
-        addLog('视频流开始采集');
-        addLog('电流传感器接入成功');
+        addLog('6类演示数据已加载', 'success');
+        addLog('预录视频开始播放');
+        addLog('模拟电流时序已启动');
 
         state.stage = 2;
         startDataStream();
@@ -1859,7 +1946,7 @@
         $('currentStatus').className = 'value-status ' + (state.currentValue > 70 ? 'warn' : 'ok');
         $('frameNo').textContent = '#' + String(state.streamTick).padStart(5, '0');
         $('statusDot').className = 'status-dot online';
-        $('statusText').textContent = '在线';
+        $('statusText').textContent = '演示中';
         $('fusionStatus').textContent = '融合中';
         $('videoMainTime').textContent = new Date().toLocaleTimeString('zh-CN', { hour12: false });
 
@@ -1872,7 +1959,7 @@
         // 电流峰值自动触发视频抓拍 - 缩短时间
         if (state.currentValue > 75 && !state.peakDetected && state.stage === 2 && state.streamTick > 30) {
           state.peakDetected = true;
-          addLog('⚡ 电流峰值自动触发视频抓拍', 'warn');
+          addLog('⚡ 演示逻辑：电流峰值触发视频分析', 'warn');
           triggerAnalysis();
         }
 
@@ -1986,7 +2073,7 @@
     }
 
     function triggerAnalysis() {
-      addLog('视觉模型开始分析关键帧...');
+      addLog('模拟视觉特征开始分析预录关键帧...');
 
       $('stableAmp').textContent = state.caseType === 0 ? '62' : '58';
       $('stableTime').textContent = state.caseType === 0 ? '88' : '95';
@@ -2104,7 +2191,7 @@
 
     function runAgentDecision() {
       state.stage = 3;
-      addLog('GLM决策模块开始研判...');
+      addLog('演示决策模块开始研判...');
 
       if (state.caseType === 0) {
         // 成功案例

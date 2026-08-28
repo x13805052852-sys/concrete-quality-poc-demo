@@ -1,7 +1,7 @@
 {
   "agentName": "混凝土生产质量智能体_本地验证链路",
   "version": "local-poc-1.0",
-  "boundary": "数据接入层已抽象为 adapters/（plc/erp/vision/context 四路适配器），POC 阶段 backend=sqlite 读预采集数据；生产部署切换 backend=opcua/rest/rtsp 时 agent 逻辑零改动。GLM 真实调用，HITL 高风险动作保留人工确认。",
+  "boundary": "当前主链路使用 SQLite/mock 样例数据；adapters/ 提供统一接口和部分协议代码骨架，但 opcua/rest/rtsp 尚未完成现场联调。配置 API Key 时可调用 GLM，失败会明确降级到规则研判；HITL 仅模拟调整并保留人工确认，不执行真实生产控制。",
   "runMeta": {
     "totalDurationMs": 9320,
     "nodeCount": 5,
@@ -53,7 +53,7 @@
         ],
         "sourcePath": "visual_features(batchId=JB-C35-026-C)",
         "ok": true,
-        "note": "POC: SQLite 预计算特征；生产: RTSP+YOLOv8-seg 实时推理"
+        "note": "POC: SQLite 预计算特征；目标接口骨架: RTSP+视觉模型（未现场验证）"
       },
       {
         "source": "plc",
@@ -71,7 +71,7 @@
         "sourcePath": "sensor_current_points(batchId=JB-C35-026-C)",
         "ok": true,
         "pointCount": 0,
-        "note": "POC: SQLite 160点静态时序；生产: OPC UA 订阅 Channel1.Mixer.Current 100ms 采样"
+        "note": "POC: SQLite 160点静态时序；目标接口骨架: OPC UA 订阅（点位与采样率需现场确认）"
       },
       {
         "source": "erp-mix",
@@ -137,7 +137,7 @@
           "opcua",
           "modbus"
         ],
-        "description": "搅拌机电流时序数据适配层。POC=sqlite，演示=mock，生产=opcua/modbus（需装 node-opcua/modbus-serial）。",
+        "description": "搅拌机电流时序适配层。sqlite/mock 可用于本地 POC；opcua/modbus 为待现场联调的接口骨架。",
         "productionConfig": {
           "opcua": {
             "endpoint": "opc.tcp://localhost:4840",
@@ -161,7 +161,7 @@
           "rest",
           "mes"
         ],
-        "description": "配比单与材料库存适配层。POC=sqlite，演示=mock，生产=REST/MES（用友/金蝶/自研 CQMS）。",
+        "description": "配比单与材料库存适配层。sqlite/mock 可用于本地 POC；REST/MES 为待系统联调的接口骨架。",
         "productionConfig": {
           "rest": {
             "apiBase": "http://erp.local:8080",
@@ -181,7 +181,7 @@
           "onvif",
           "cloud"
         ],
-        "description": "搅拌机视觉特征适配层。POC=sqlite，演示=mock，生产=rtsp(YOLOv8-seg)/onvif/cloud。",
+        "description": "搅拌机视觉特征适配层。sqlite/mock 可用于本地 POC；RTSP/ONVIF/cloud 为待模型与现场联调的接口骨架。",
         "productionConfig": {
           "rtsp": {
             "url": "rtsp://camera-01.local/mixer-interior",
@@ -203,7 +203,7 @@
           "mock",
           "api"
         ],
-        "description": "气象/运距/设备状态上下文适配层。POC=sqlite，演示=mock，生产=api(和风天气+调度+MES)。",
+        "description": "气象/运距/设备状态适配层。sqlite/mock 可用于本地 POC；天气、调度和 MES API 为待联调的接口骨架。",
         "productionConfig": {
           "api": {
             "weatherKeyConfigured": false,
